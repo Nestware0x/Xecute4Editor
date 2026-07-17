@@ -9,63 +9,122 @@
   <style>
     :root {
       color-scheme: dark;
-      --background: #090d17;
-      --panel: #111827;
-      --panel-2: #172033;
-      --border: #28344d;
-      --text: #eef2ff;
-      --muted: #9ba8c3;
-      --accent: #7c6cff;
-      --accent-hover: #9588ff;
+      --background: #080b12;
+      --sidebar: #10141d;
+      --panel: #151a24;
+      --panel-2: #1c2330;
+      --panel-hover: #252d3c;
+      --border: #2a3342;
+      --text: #f2f3f5;
+      --muted: #a6adbb;
+      --faint: #747d8d;
+      --accent: #5865f2;
+      --accent-hover: #6875f5;
       --success: #34d399;
       --danger: #fb7185;
     }
     * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-padding-top: 24px; }
     body {
       margin: 0;
       min-height: 100vh;
-      background: radial-gradient(circle at top left, #1a2450 0, transparent 35%), var(--background);
+      background: radial-gradient(circle at 30% -20%, #1d2850 0, transparent 38%), var(--background);
       color: var(--text);
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
     button, input, select { font: inherit; }
-    .shell { width: min(980px, calc(100% - 32px)); margin: 0 auto; padding: 48px 0 120px; }
-    .brand { display: flex; align-items: center; gap: 14px; margin-bottom: 32px; }
+    a { color: inherit; }
+    .shell { width: min(1280px, calc(100% - 32px)); margin: 0 auto; padding: 28px 0 120px; }
+    .brand { display: flex; align-items: center; gap: 14px; margin: 0 0 24px 4px; }
     .logo {
       width: 44px; height: 44px; border-radius: 14px;
       display: grid; place-items: center; font-weight: 900; font-size: 20px;
-      background: linear-gradient(135deg, var(--accent), #3dd6d0);
-      box-shadow: 0 12px 40px rgba(124, 108, 255, .35);
+      background: linear-gradient(135deg, var(--accent), #9a73ff);
+      box-shadow: 0 12px 40px rgba(88, 101, 242, .35);
     }
-    h1, h2, p { margin-top: 0; }
-    h1 { margin-bottom: 5px; font-size: clamp(25px, 4vw, 36px); }
+    h1, h2, h3, p { margin-top: 0; }
+    h1 { margin-bottom: 3px; font-size: 22px; letter-spacing: -.02em; }
     .subtitle, .muted { color: var(--muted); }
-    .card {
-      border: 1px solid var(--border); border-radius: 20px; background: rgba(17, 24, 39, .92);
-      box-shadow: 0 20px 70px rgba(0, 0, 0, .28); overflow: hidden;
+    .workspace {
+      display: grid; grid-template-columns: 270px minmax(0, 1fr); gap: 22px; align-items: start;
     }
-    .card-header { padding: 24px 28px; border-bottom: 1px solid var(--border); }
-    .card-header h2 { margin-bottom: 5px; }
-    .settings { padding: 4px 28px; }
+    .sidebar {
+      position: sticky; top: 24px; max-height: calc(100vh - 48px); overflow-y: auto;
+      border: 1px solid var(--border); border-radius: 18px; background: rgba(16, 20, 29, .96);
+      box-shadow: 0 18px 60px rgba(0, 0, 0, .25); padding: 10px;
+      scrollbar-width: thin; scrollbar-color: #3a4352 transparent;
+    }
+    .server-summary {
+      display: flex; gap: 11px; align-items: center; padding: 10px 10px 14px;
+      border-bottom: 1px solid var(--border); margin-bottom: 10px;
+    }
+    .server-icon {
+      width: 42px; height: 42px; flex: 0 0 auto; border-radius: 14px; display: grid; place-items: center;
+      background: linear-gradient(145deg, #5865f2, #7c5cff); font-weight: 850; font-size: 17px;
+    }
+    .server-name { font-weight: 780; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .server-label { color: var(--faint); font-size: 12px; margin-top: 2px; }
+    .nav-group + .nav-group { margin-top: 14px; }
+    .nav-category {
+      display: flex; align-items: center; gap: 7px; padding: 5px 8px; color: var(--muted);
+      font-size: 12px; font-weight: 800; letter-spacing: .045em; text-decoration: none; text-transform: uppercase;
+    }
+    .nav-category::before { content: "⌄"; color: var(--faint); font-size: 13px; }
+    .nav-count { margin-left: auto; color: var(--faint); font-weight: 650; }
+    .nav-channel {
+      display: flex; align-items: center; gap: 7px; min-height: 34px; margin: 1px 0; padding: 6px 9px;
+      border-radius: 7px; color: var(--muted); font-size: 14px; font-weight: 580; text-decoration: none;
+      overflow: hidden;
+    }
+    .nav-channel::before { content: "#"; color: var(--faint); font-size: 17px; font-weight: 500; }
+    .nav-channel span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .nav-channel:hover, .nav-channel.active { color: var(--text); background: var(--panel-hover); }
+    .content { min-width: 0; }
+    .hero {
+      border: 1px solid var(--border); border-radius: 20px; padding: 25px 28px;
+      background: linear-gradient(120deg, rgba(88,101,242,.17), rgba(21,26,36,.96) 56%);
+      box-shadow: 0 20px 70px rgba(0, 0, 0, .22); margin-bottom: 18px;
+    }
+    .eyebrow { color: #9ea7ff; font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 8px; }
+    .hero h2 { font-size: clamp(24px, 4vw, 34px); letter-spacing: -.03em; margin-bottom: 7px; }
+    .settings { display: grid; gap: 18px; }
+    .category-card {
+      scroll-margin-top: 24px; border: 1px solid var(--border); border-radius: 18px;
+      background: rgba(21, 26, 36, .95); box-shadow: 0 18px 55px rgba(0,0,0,.18); overflow: hidden;
+    }
+    .category-header {
+      display: flex; align-items: center; gap: 13px; padding: 20px 24px; border-bottom: 1px solid var(--border);
+      background: rgba(28, 35, 48, .66);
+    }
+    .category-mark {
+      width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center;
+      background: rgba(88,101,242,.18); color: #aeb5ff; font-weight: 900;
+    }
+    .category-title { font-size: 17px; margin-bottom: 2px; }
+    .category-owner { color: var(--faint); font: 12px ui-monospace, SFMono-Regular, Consolas, monospace; }
+    .category-total { margin-left: auto; color: var(--muted); font-size: 12px; }
     .setting {
       display: grid; grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr);
-      gap: 26px; align-items: center; padding: 22px 0; border-bottom: 1px solid var(--border);
+      gap: 28px; align-items: center; padding: 22px 24px; border-bottom: 1px solid var(--border);
+      scroll-margin-top: 24px;
     }
     .setting:last-child { border-bottom: 0; }
-    .setting-title { font-weight: 750; margin-bottom: 5px; }
-    .setting-key { color: #7584a5; font: 12px ui-monospace, SFMono-Regular, Consolas, monospace; margin-top: 7px; }
+    .setting:target { background: rgba(88,101,242,.08); }
+    .setting-title { font-weight: 760; margin-bottom: 6px; }
+    .setting-description { color: var(--muted); font-size: 13px; line-height: 1.55; }
+    .setting-key { color: var(--faint); font: 11px ui-monospace, SFMono-Regular, Consolas, monospace; margin-top: 7px; }
     input[type="text"], input[type="number"], select {
       width: 100%; min-height: 44px; border: 1px solid #3a4763; border-radius: 11px;
-      background: #0d1423; color: var(--text); padding: 10px 12px; outline: none;
+      background: #0d1119; color: var(--text); padding: 10px 12px; outline: none;
     }
-    input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(124,108,255,.18); }
+    input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(88,101,242,.2); }
     .switch { display: flex; align-items: center; gap: 10px; justify-content: flex-start; cursor: pointer; }
     .switch input { width: 21px; height: 21px; accent-color: var(--accent); }
     .actions {
       position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%);
-      width: min(920px, calc(100% - 28px)); display: flex; align-items: center; justify-content: space-between;
+      width: min(1240px, calc(100% - 28px)); display: flex; align-items: center; justify-content: space-between;
       gap: 12px; padding: 14px 16px; border: 1px solid var(--border); border-radius: 16px;
-      background: rgba(13, 20, 35, .9); backdrop-filter: blur(14px); box-shadow: 0 16px 50px rgba(0,0,0,.4);
+      background: rgba(13, 17, 25, .92); backdrop-filter: blur(14px); box-shadow: 0 16px 50px rgba(0,0,0,.4);
     }
     .button-row { display: flex; gap: 10px; }
     button {
@@ -80,12 +139,21 @@
     .notice.success { border-color: rgba(52,211,153,.5); color: #a7f3d0; }
     .hidden { display: none !important; }
     code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
-    @media (max-width: 700px) {
-      .shell { padding-top: 28px; }
+    @media (max-width: 860px) {
+      .workspace { grid-template-columns: 1fr; }
+      .sidebar { position: static; max-height: none; }
+      .navigation { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; }
+      .nav-group + .nav-group { margin-top: 0; }
+    }
+    @media (max-width: 650px) {
+      .shell { width: min(100% - 20px, 1280px); padding-top: 18px; }
+      .brand { margin-left: 2px; }
+      .hero, .category-header { padding-left: 18px; padding-right: 18px; }
       .setting { grid-template-columns: 1fr; gap: 13px; }
       .actions { align-items: stretch; flex-direction: column; }
       .button-row { width: 100%; }
       .button-row button { flex: 1; }
+      .action-note { display: none; }
     }
   </style>
 </head>
@@ -100,17 +168,30 @@
     </header>
 
     <div id="message" class="notice hidden"></div>
-    <section id="editor" class="card hidden">
-      <div class="card-header">
-        <h2 id="guildName">Discord Server</h2>
-        <div id="expiry" class="muted"></div>
+    <section id="editor" class="workspace hidden">
+      <aside class="sidebar">
+        <div class="server-summary">
+          <div id="serverInitial" class="server-icon">D</div>
+          <div style="min-width: 0">
+            <div id="sidebarGuildName" class="server-name">Discord Server</div>
+            <div class="server-label">Xecute settings</div>
+          </div>
+        </div>
+        <nav id="navigation" class="navigation" aria-label="設定一覧"></nav>
+      </aside>
+      <div class="content">
+        <header class="hero">
+          <div class="eyebrow">Server configuration</div>
+          <h2 id="guildName">Discord Server</h2>
+          <div id="expiry" class="muted"></div>
+        </header>
+        <div id="settings" class="settings"></div>
       </div>
-      <div id="settings" class="settings"></div>
     </section>
   </main>
 
   <div id="actions" class="actions hidden">
-    <div class="muted">設定はこのブラウザー内だけで処理されます。</div>
+    <div class="muted action-note">設定はこのブラウザー内だけで処理されます。</div>
     <div class="button-row">
       <button id="resetButton" type="button">元に戻す</button>
       <button id="copyButton" class="primary" type="button">適用コードをコピー</button>
@@ -120,11 +201,13 @@
   <script>
     'use strict';
 
-    const state = { authorization: '', signature: '', definitions: [], original: {}, values: {} };
+    const state = { authorization: '', signature: '', categories: {}, definitions: [], original: {}, values: {} };
     const message = document.getElementById('message');
     const editor = document.getElementById('editor');
     const actions = document.getElementById('actions');
     const settingsRoot = document.getElementById('settings');
+    const navigationRoot = document.getElementById('navigation');
+    let navigationObserver;
 
     function showMessage(text, type) {
       message.textContent = text;
@@ -232,27 +315,138 @@
       return input;
     }
 
+    function ownerFor(definition) {
+      if (definition.o) return definition.o;
+      const separator = definition.k.indexOf('.');
+      return separator > 0 ? definition.k.slice(0, separator) : 'xross';
+    }
+
+    function categoryName(owner) {
+      if (state.categories[owner]) return state.categories[owner];
+      if (owner === 'xross') return 'System';
+      return owner.split(/[-_.]+/).filter(Boolean)
+        .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ');
+    }
+
+    function elementId(prefix, value) {
+      return `${prefix}-${value.replace(/[^A-Za-z0-9_-]/g, '-')}`;
+    }
+
+    function groupedDefinitions() {
+      const groups = new Map();
+      for (const definition of state.definitions) {
+        const owner = ownerFor(definition);
+        if (!groups.has(owner)) groups.set(owner, []);
+        groups.get(owner).push(definition);
+      }
+      return [...groups.entries()].sort(([left], [right]) => {
+        if (left === 'xross') return -1;
+        if (right === 'xross') return 1;
+        return categoryName(left).localeCompare(categoryName(right), 'ja');
+      });
+    }
+
+    function createSettingRow(definition) {
+      const row = document.createElement('div');
+      const rowId = elementId('setting', definition.k);
+      row.id = rowId;
+      row.className = 'setting';
+
+      const information = document.createElement('div');
+      const title = document.createElement('div');
+      title.id = `${rowId}-title`;
+      title.className = 'setting-title';
+      title.textContent = definition.l;
+      const description = document.createElement('div');
+      description.className = 'setting-description';
+      description.textContent = definition.h || 'この設定項目の値を変更します。';
+      const key = document.createElement('div');
+      key.className = 'setting-key';
+      key.textContent = definition.k;
+      information.append(title, description, key);
+
+      const input = createInput(definition);
+      const control = input.matches && input.matches('input, select') ? input : input.querySelector('input, select');
+      if (control) control.setAttribute('aria-labelledby', title.id);
+      row.append(information, input);
+      return row;
+    }
+
+    function activateNavigation() {
+      if (navigationObserver) navigationObserver.disconnect();
+      const links = new Map([...navigationRoot.querySelectorAll('.nav-channel')]
+        .map(link => [link.getAttribute('href').slice(1), link]));
+      if (!('IntersectionObserver' in window)) return;
+      navigationObserver = new IntersectionObserver(entries => {
+        const visible = entries.find(entry => entry.isIntersecting);
+        if (!visible) return;
+        links.forEach(link => link.classList.remove('active'));
+        const link = links.get(visible.target.id);
+        if (link) link.classList.add('active');
+      }, { rootMargin: '-15% 0px -70% 0px', threshold: 0 });
+      settingsRoot.querySelectorAll('.setting').forEach(row => navigationObserver.observe(row));
+    }
+
     function render() {
       settingsRoot.replaceChildren();
-      for (const definition of state.definitions) {
-        const row = document.createElement('div');
-        row.className = 'setting';
-        const information = document.createElement('div');
-        const title = document.createElement('div');
-        title.className = 'setting-title';
-        title.textContent = definition.l;
-        const description = document.createElement('div');
-        description.className = 'muted';
-        description.textContent = `設定項目: ${definition.k}`;
-        const key = document.createElement('div');
-        key.className = 'setting-key';
-        key.textContent = definition.k;
-        information.append(title, description, key);
-        row.append(information, createInput(definition));
-        settingsRoot.append(row);
+      navigationRoot.replaceChildren();
+
+      for (const [owner, definitions] of groupedDefinitions()) {
+        const name = categoryName(owner);
+        const categoryId = elementId('category', owner);
+
+        const navGroup = document.createElement('div');
+        navGroup.className = 'nav-group';
+        const categoryLink = document.createElement('a');
+        categoryLink.className = 'nav-category';
+        categoryLink.href = `#${categoryId}`;
+        const categoryText = document.createElement('span');
+        categoryText.textContent = name;
+        const count = document.createElement('span');
+        count.className = 'nav-count';
+        count.textContent = definitions.length;
+        categoryLink.append(categoryText, count);
+        navGroup.append(categoryLink);
+
+        for (const definition of definitions) {
+          const link = document.createElement('a');
+          link.className = 'nav-channel';
+          link.href = `#${elementId('setting', definition.k)}`;
+          const label = document.createElement('span');
+          label.textContent = definition.l;
+          link.append(label);
+          navGroup.append(link);
+        }
+        navigationRoot.append(navGroup);
+
+        const category = document.createElement('section');
+        category.id = categoryId;
+        category.className = 'category-card';
+        const header = document.createElement('header');
+        header.className = 'category-header';
+        const mark = document.createElement('div');
+        mark.className = 'category-mark';
+        mark.textContent = name.charAt(0).toUpperCase();
+        const heading = document.createElement('div');
+        const title = document.createElement('h3');
+        title.className = 'category-title';
+        title.textContent = name;
+        const ownerLabel = document.createElement('div');
+        ownerLabel.className = 'category-owner';
+        ownerLabel.textContent = owner === 'xross' ? 'Xross Engine' : owner;
+        heading.append(title, ownerLabel);
+        const total = document.createElement('div');
+        total.className = 'category-total';
+        total.textContent = `${definitions.length} 項目`;
+        header.append(mark, heading, total);
+        category.append(header);
+        definitions.forEach(definition => category.append(createSettingRow(definition)));
+        settingsRoot.append(category);
       }
       editor.classList.remove('hidden');
       actions.classList.remove('hidden');
+      activateNavigation();
     }
 
     async function initialize() {
@@ -272,10 +466,14 @@
 
         state.authorization = parts[2];
         state.signature = parts[3];
+        state.categories = payload.c || {};
         state.definitions = payload.d;
         state.original = structuredClone(payload.v);
         state.values = structuredClone(payload.v);
-        document.getElementById('guildName').textContent = payload.n || 'Discord Server';
+        const guildName = payload.n || 'Discord Server';
+        document.getElementById('guildName').textContent = guildName;
+        document.getElementById('sidebarGuildName').textContent = guildName;
+        document.getElementById('serverInitial').textContent = guildName.charAt(0).toUpperCase();
         document.getElementById('expiry').textContent = `有効期限: ${new Date(authorization.e * 1000).toLocaleString()}`;
         render();
       } catch (error) {
