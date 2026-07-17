@@ -1,6 +1,128 @@
 'use strict';
 
 const THEME_STORAGE_KEY = 'xecute-editor-theme';
+const LANGUAGE_STORAGE_KEY = 'xecute-editor-language';
+const I18N = {
+  ja: {
+    brandStatus: 'サーバーと通信しない静的エディター',
+    localProcessing: 'ローカル処理',
+    serverSettings: 'サーバー設定',
+    xecuteSettings: 'Xecute 設定',
+    serverConfiguration: 'サーバー設定',
+    heroCopy: 'Xross Engineと各プラグインが公開している設定を、このページからまとめて編集できます。',
+    actionNote: '設定はこのブラウザー内だけで処理されます。',
+    reset: '元に戻す',
+    copy: '適用コードをコピー',
+    navigation: '設定一覧',
+    languageAria: '表示言語',
+    themeLight: 'ライト',
+    themeDark: 'ダーク',
+    switchLight: 'ライトモードに切り替える',
+    switchDark: 'ダークモードに切り替える',
+    enabled: '有効',
+    disabled: '無効',
+    system: 'システム',
+    overview: '概要',
+    collapseCategory: '{name}カテゴリーを折りたたむ',
+    expandCategory: '{name}カテゴリーを展開する',
+    items: '{count} 項目',
+    item: '{count} 項目',
+    expiry: '有効期限: {date}',
+    channelPlaceholder: 'DiscordチャンネルID、または0',
+    rolePlaceholder: 'DiscordロールID、または0',
+    descriptionBoolean: 'この機能の有効・無効を切り替えます。',
+    descriptionInteger: 'この設定で使用する数値を指定します。',
+    descriptionSelect: '利用する値を一覧から選択します。',
+    descriptionChannel: '対象となるDiscordチャンネルをIDで指定します。',
+    descriptionRole: '対象となるDiscordロールをIDで指定します。',
+    descriptionDefault: 'この設定項目の値を変更します。',
+    xrossLanguageLabel: '表示言語',
+    xrossLanguageDescription: 'Xross EngineとWebエディターで使用する表示言語です。',
+    xrossVoiceVolumeLabel: '音声音量',
+    xrossVoiceVolumeDescription: 'このDiscordサーバーで再生する音声の音量です（0～100）。',
+    invalidUrlEncoding: 'EditorリンクのURLエンコードが壊れています。Discordで /editor を再実行してください。',
+    invalidBase64: 'EditorリンクのBase64URLデータが壊れています。Discordで /editor を再実行してください。',
+    base64RestoreFailed: 'EditorリンクをBase64URLとして復元できません。Discordで /editor を再実行してください。',
+    decompressUnsupported: 'このブラウザーは圧縮設定コードに対応していません。',
+    compressUnsupported: 'このブラウザーは設定コード生成に対応していません。',
+    corruptedPayload: 'Editorリンクのデータが破損しています。',
+    invalidLink: '有効なXecute Editorリンクではありません。Discordで /editor を実行してください。',
+    expiredLink: 'このEditorリンクは期限切れです。Discordで /editor を再実行してください。',
+    booleanRequired: '{label}: 真偽値が必要です。',
+    integerRequired: '{label}: 整数が必要です。',
+    minimumValue: '{label}: 最小値は {value} です。',
+    maximumValue: '{label}: 最大値は {value} です。',
+    stringRequired: '{label}: 文字列が必要です。',
+    minimumLength: '{label}: {value}文字以上必要です。',
+    maximumLength: '{label}: {value}文字以内にしてください。',
+    invalidSelection: '{label}: 選択値が不正です。',
+    discordIdRequired: '{label}: Discord IDまたは0を入力してください。',
+    resetComplete: '設定をEditorを開いた時点の値へ戻しました。',
+    codeTooLarge: '設定コードがDiscordの入力上限を超えました。設定項目を減らしてください。',
+    clipboardFailed: 'クリップボードへコピーできませんでした。ブラウザーの権限を確認してください。',
+    copyComplete: '適用コードをコピーしました。Discordで /apply の code に貼り付けてください。'
+  },
+  en: {
+    brandStatus: 'Static editor with no server communication',
+    localProcessing: 'Local only',
+    serverSettings: 'Server settings',
+    xecuteSettings: 'Xecute settings',
+    serverConfiguration: 'Server configuration',
+    heroCopy: 'Edit settings published by Xross Engine and its plugins together on this page.',
+    actionNote: 'Settings are processed only in this browser.',
+    reset: 'Reset',
+    copy: 'Copy apply code',
+    navigation: 'Settings navigation',
+    languageAria: 'Display language',
+    themeLight: 'Light',
+    themeDark: 'Dark',
+    switchLight: 'Switch to light mode',
+    switchDark: 'Switch to dark mode',
+    enabled: 'Enabled',
+    disabled: 'Disabled',
+    system: 'System',
+    overview: 'Overview',
+    collapseCategory: 'Collapse the {name} category',
+    expandCategory: 'Expand the {name} category',
+    items: '{count} items',
+    item: '{count} item',
+    expiry: 'Expires: {date}',
+    channelPlaceholder: 'Discord channel ID, or 0',
+    rolePlaceholder: 'Discord role ID, or 0',
+    descriptionBoolean: 'Enable or disable this feature.',
+    descriptionInteger: 'Enter the number used by this setting.',
+    descriptionSelect: 'Choose a value from the list.',
+    descriptionChannel: 'Enter the Discord channel ID to use.',
+    descriptionRole: 'Enter the Discord role ID to use.',
+    descriptionDefault: 'Change the value of this setting.',
+    xrossLanguageLabel: 'Display language',
+    xrossLanguageDescription: 'Language used by Xross Engine and the Web Editor.',
+    xrossVoiceVolumeLabel: 'Voice volume',
+    xrossVoiceVolumeDescription: 'Voice playback volume for this Discord server (0-100).',
+    invalidUrlEncoding: 'The Editor link has invalid URL encoding. Run /editor again in Discord.',
+    invalidBase64: 'The Editor link contains invalid Base64URL data. Run /editor again in Discord.',
+    base64RestoreFailed: 'The Editor link could not be decoded as Base64URL. Run /editor again in Discord.',
+    decompressUnsupported: 'This browser does not support compressed setting codes.',
+    compressUnsupported: 'This browser cannot generate setting codes.',
+    corruptedPayload: 'The Editor link data is corrupted.',
+    invalidLink: 'This is not a valid Xecute Editor link. Run /editor in Discord.',
+    expiredLink: 'This Editor link has expired. Run /editor again in Discord.',
+    booleanRequired: '{label}: a boolean value is required.',
+    integerRequired: '{label}: an integer is required.',
+    minimumValue: '{label}: the minimum value is {value}.',
+    maximumValue: '{label}: the maximum value is {value}.',
+    stringRequired: '{label}: text is required.',
+    minimumLength: '{label}: enter at least {value} characters.',
+    maximumLength: '{label}: enter no more than {value} characters.',
+    invalidSelection: '{label}: the selected value is invalid.',
+    discordIdRequired: '{label}: enter a Discord ID or 0.',
+    resetComplete: 'Settings were reset to the values from when the Editor was opened.',
+    codeTooLarge: 'The setting code exceeds the Discord input limit. Reduce the number of settings.',
+    clipboardFailed: 'Could not copy to the clipboard. Check the browser permission.',
+    copyComplete: 'Apply code copied. Paste it into the code option of /apply in Discord.'
+  }
+};
+
 const state = {
   authorization: '',
   signature: '',
@@ -8,7 +130,10 @@ const state = {
   definitions: [],
   original: {},
   values: {},
-  collapsedOwners: new Set()
+  collapsedOwners: new Set(),
+  language: 'ja',
+  expiresAt: 0,
+  initialized: false
 };
 
 const message = document.getElementById('message');
@@ -18,7 +143,26 @@ const settingsRoot = document.getElementById('settings');
 const navigationRoot = document.getElementById('navigation');
 const themeToggle = document.getElementById('themeToggle');
 const themeLabel = document.getElementById('themeLabel');
+const languageSelect = document.getElementById('languageSelect');
 let navigationObserver;
+
+function t(key, values) {
+  const dictionary = I18N[state.language] || I18N.ja;
+  let text = dictionary[key] || I18N.ja[key] || key;
+  for (const [name, value] of Object.entries(values || {})) {
+    text = text.replaceAll(`{${name}}`, String(value));
+  }
+  return text;
+}
+
+function storedLanguage() {
+  try {
+    const stored = localStorage.getItem(LANGUAGE_STORAGE_KEY);
+    if (stored === 'ja' || stored === 'en') return stored;
+  } catch (error) {
+  }
+  return navigator.language && navigator.language.toLowerCase().startsWith('ja') ? 'ja' : 'en';
+}
 
 function storedTheme() {
   try {
@@ -34,14 +178,45 @@ function applyTheme(theme, persist) {
   const dark = normalized === 'dark';
   document.documentElement.dataset.theme = normalized;
   themeToggle.setAttribute('aria-pressed', String(dark));
-  themeToggle.setAttribute('aria-label', dark ? 'ライトモードに切り替える' : 'ダークモードに切り替える');
-  themeLabel.textContent = dark ? 'ダーク' : 'ライト';
+  themeToggle.setAttribute('aria-label', dark ? t('switchLight') : t('switchDark'));
+  themeLabel.textContent = dark ? t('themeDark') : t('themeLight');
   if (persist) {
     try {
       localStorage.setItem(THEME_STORAGE_KEY, normalized);
     } catch (error) {
     }
   }
+}
+
+function applyLanguage(language, persist) {
+  state.language = language === 'en' ? 'en' : 'ja';
+  document.documentElement.lang = state.language;
+  languageSelect.value = state.language;
+  languageSelect.setAttribute('aria-label', t('languageAria'));
+  navigationRoot.setAttribute('aria-label', t('navigation'));
+  document.querySelectorAll('[data-i18n]').forEach(element => {
+    element.textContent = t(element.dataset.i18n);
+  });
+  applyTheme(document.documentElement.dataset.theme || storedTheme(), false);
+  updateExpiry();
+  if (state.initialized) render();
+  if (persist) {
+    try {
+      localStorage.setItem(LANGUAGE_STORAGE_KEY, state.language);
+    } catch (error) {
+    }
+  }
+}
+
+function localizedText(localizations, fallback) {
+  if (!localizations || typeof localizations !== 'object') return fallback;
+  return localizations[state.language] || localizations[state.language.split('-')[0]] || fallback;
+}
+
+function definitionLabel(definition) {
+  if (definition.k === 'xross.language') return t('xrossLanguageLabel');
+  if (definition.k === 'xross.voice-volume') return t('xrossVoiceVolumeLabel');
+  return localizedText(definition.L, definition.l || definition.k);
 }
 
 function showMessage(text, type) {
@@ -54,17 +229,17 @@ function base64UrlToBytes(value) {
   try {
     normalized = decodeURIComponent(value).replace(/\s/g, '');
   } catch (error) {
-    throw new Error('EditorリンクのURLエンコードが壊れています。Discordで /editor を再実行してください。');
+    throw new Error(t('invalidUrlEncoding'));
   }
   if (!/^[A-Za-z0-9_-]+$/.test(normalized) || normalized.length % 4 === 1) {
-    throw new Error('EditorリンクのBase64URLデータが壊れています。Discordで /editor を再実行してください。');
+    throw new Error(t('invalidBase64'));
   }
   const padding = '='.repeat((4 - normalized.length % 4) % 4);
   try {
     const binary = atob(normalized.replace(/-/g, '+').replace(/_/g, '/') + padding);
     return Uint8Array.from(binary, character => character.charCodeAt(0));
   } catch (error) {
-    throw new Error('EditorリンクをBase64URLとして復元できません。Discordで /editor を再実行してください。');
+    throw new Error(t('base64RestoreFailed'));
   }
 }
 
@@ -76,16 +251,23 @@ function bytesToBase64Url(bytes) {
 
 async function decompressJson(encoded) {
   if (typeof DecompressionStream === 'undefined') {
-    throw new Error('このブラウザーは圧縮設定コードに対応していません。');
+    throw new Error(t('decompressUnsupported'));
   }
-  const stream = new Blob([base64UrlToBytes(encoded)]).stream().pipeThrough(new DecompressionStream('deflate'));
-  const text = await new Response(stream).text();
-  return JSON.parse(text);
+  try {
+    const stream = new Blob([base64UrlToBytes(encoded)]).stream().pipeThrough(new DecompressionStream('deflate'));
+    const text = await new Response(stream).text();
+    return JSON.parse(text);
+  } catch (error) {
+    if (error instanceof Error && error.message !== t('corruptedPayload')) {
+      throw new Error(t('corruptedPayload'));
+    }
+    throw error;
+  }
 }
 
 async function compressJson(value) {
   if (typeof CompressionStream === 'undefined') {
-    throw new Error('このブラウザーは設定コード生成に対応していません。');
+    throw new Error(t('compressUnsupported'));
   }
   const input = new TextEncoder().encode(JSON.stringify(value));
   const stream = new Blob([input]).stream().pipeThrough(new CompressionStream('deflate'));
@@ -93,24 +275,25 @@ async function compressJson(value) {
 }
 
 function validateDefinition(definition, value) {
+  const label = definitionLabel(definition);
   if (definition.t === 'BOOLEAN' && typeof value !== 'boolean') {
-    throw new Error(`${definition.l}: 真偽値が必要です。`);
+    throw new Error(t('booleanRequired', { label }));
   }
   if (definition.t === 'INTEGER') {
-    if (!Number.isInteger(value)) throw new Error(`${definition.l}: 整数が必要です。`);
-    if (definition.n != null && value < definition.n) throw new Error(`${definition.l}: 最小値は ${definition.n} です。`);
-    if (definition.x != null && value > definition.x) throw new Error(`${definition.l}: 最大値は ${definition.x} です。`);
+    if (!Number.isInteger(value)) throw new Error(t('integerRequired', { label }));
+    if (definition.n != null && value < definition.n) throw new Error(t('minimumValue', { label, value: definition.n }));
+    if (definition.x != null && value > definition.x) throw new Error(t('maximumValue', { label, value: definition.x }));
   }
   if (definition.t === 'STRING') {
-    if (typeof value !== 'string') throw new Error(`${definition.l}: 文字列が必要です。`);
-    if (definition.n != null && value.length < definition.n) throw new Error(`${definition.l}: ${definition.n}文字以上必要です。`);
-    if (definition.x != null && value.length > definition.x) throw new Error(`${definition.l}: ${definition.x}文字以内にしてください。`);
+    if (typeof value !== 'string') throw new Error(t('stringRequired', { label }));
+    if (definition.n != null && value.length < definition.n) throw new Error(t('minimumLength', { label, value: definition.n }));
+    if (definition.x != null && value.length > definition.x) throw new Error(t('maximumLength', { label, value: definition.x }));
   }
   if (definition.t === 'SELECT' && !(definition.c || []).some(choice => choice.v === value)) {
-    throw new Error(`${definition.l}: 選択値が不正です。`);
+    throw new Error(t('invalidSelection', { label }));
   }
   if ((definition.t === 'CHANNEL' || definition.t === 'ROLE') && !/^(0|[1-9][0-9]{5,24})$/.test(value)) {
-    throw new Error(`${definition.l}: Discord IDまたは0を入力してください。`);
+    throw new Error(t('discordIdRequired', { label }));
   }
 }
 
@@ -125,10 +308,10 @@ function createInput(definition) {
     input.type = 'checkbox';
     input.checked = Boolean(value);
     const text = document.createElement('span');
-    text.textContent = input.checked ? '有効' : '無効';
+    text.textContent = input.checked ? t('enabled') : t('disabled');
     input.addEventListener('change', () => {
       state.values[definition.k] = input.checked;
-      text.textContent = input.checked ? '有効' : '無効';
+      text.textContent = input.checked ? t('enabled') : t('disabled');
     });
     wrapper.append(input, text);
     return wrapper;
@@ -139,7 +322,7 @@ function createInput(definition) {
     for (const choice of definition.c || []) {
       const option = document.createElement('option');
       option.value = choice.v;
-      option.textContent = choice.l;
+      option.textContent = localizedText(choice.L, choice.l);
       input.append(option);
     }
     input.value = value;
@@ -154,7 +337,7 @@ function createInput(definition) {
   input.value = value;
   if (definition.t === 'CHANNEL' || definition.t === 'ROLE') {
     input.inputMode = 'numeric';
-    input.placeholder = definition.t === 'CHANNEL' ? 'DiscordチャンネルID、または0' : 'DiscordロールID、または0';
+    input.placeholder = definition.t === 'CHANNEL' ? t('channelPlaceholder') : t('rolePlaceholder');
   }
   if (definition.n != null) input.min = String(definition.n);
   if (definition.x != null) input.max = String(definition.x);
@@ -171,8 +354,8 @@ function ownerFor(definition) {
 }
 
 function categoryName(owner) {
+  if (owner === 'xross') return t('system');
   if (state.categories[owner]) return state.categories[owner];
-  if (owner === 'xross') return 'System';
   return owner.split(/[-_.]+/).filter(Boolean)
     .map(part => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
@@ -192,23 +375,25 @@ function groupedDefinitions() {
   return [...groups.entries()].sort(([left], [right]) => {
     if (left === 'xross') return -1;
     if (right === 'xross') return 1;
-    return categoryName(left).localeCompare(categoryName(right), 'ja');
+    return categoryName(left).localeCompare(categoryName(right), state.language);
   });
 }
 
 function settingDescription(definition) {
-  if (definition.h) return definition.h;
-  return switchDescription(definition.t);
+  if (definition.k === 'xross.language') return t('xrossLanguageDescription');
+  if (definition.k === 'xross.voice-volume') return t('xrossVoiceVolumeDescription');
+  const localized = localizedText(definition.H, definition.h);
+  return localized || switchDescription(definition.t);
 }
 
 function switchDescription(type) {
   switch (type) {
-    case 'BOOLEAN': return 'この機能の有効・無効を切り替えます。';
-    case 'INTEGER': return 'この設定で使用する数値を指定します。';
-    case 'SELECT': return '利用する値を一覧から選択します。';
-    case 'CHANNEL': return '対象となるDiscordチャンネルをIDで指定します。';
-    case 'ROLE': return '対象となるDiscordロールをIDで指定します。';
-    default: return 'この設定項目の値を変更します。';
+    case 'BOOLEAN': return t('descriptionBoolean');
+    case 'INTEGER': return t('descriptionInteger');
+    case 'SELECT': return t('descriptionSelect');
+    case 'CHANNEL': return t('descriptionChannel');
+    case 'ROLE': return t('descriptionRole');
+    default: return t('descriptionDefault');
   }
 }
 
@@ -222,7 +407,7 @@ function createSettingRow(definition) {
   const title = document.createElement('div');
   title.id = `${rowId}-title`;
   title.className = 'setting-title';
-  title.textContent = definition.l;
+  title.textContent = definitionLabel(definition);
   const description = document.createElement('div');
   description.className = 'setting-description';
   description.textContent = settingDescription(definition);
@@ -247,7 +432,7 @@ function createNavigationBase() {
   icon.textContent = '⌂';
   icon.setAttribute('aria-hidden', 'true');
   const label = document.createElement('span');
-  label.textContent = '概要';
+  label.textContent = t('overview');
   overview.append(icon, label);
 
   const divider = document.createElement('div');
@@ -282,7 +467,7 @@ function createNavigationGroup(owner, definitions, name, categoryId) {
   toggle.className = 'nav-toggle';
   toggle.type = 'button';
   toggle.textContent = '⌃';
-  toggle.setAttribute('aria-label', `${name}カテゴリーを折りたたむ`);
+  toggle.setAttribute('aria-label', t('collapseCategory', { name }));
   toggle.setAttribute('aria-controls', channelsId);
   toggle.setAttribute('aria-expanded', String(!state.collapsedOwners.has(owner)));
   toggle.addEventListener('click', () => {
@@ -290,7 +475,7 @@ function createNavigationGroup(owner, definitions, name, categoryId) {
     if (collapsed) state.collapsedOwners.add(owner);
     else state.collapsedOwners.delete(owner);
     toggle.setAttribute('aria-expanded', String(!collapsed));
-    toggle.setAttribute('aria-label', collapsed ? `${name}カテゴリーを展開する` : `${name}カテゴリーを折りたたむ`);
+    toggle.setAttribute('aria-label', t(collapsed ? 'expandCategory' : 'collapseCategory', { name }));
   });
   categoryRow.append(categoryLink, toggle);
 
@@ -302,7 +487,7 @@ function createNavigationGroup(owner, definitions, name, categoryId) {
     link.className = 'nav-channel';
     link.href = `#${elementId('setting', definition.k)}`;
     const itemLabel = document.createElement('span');
-    itemLabel.textContent = definition.l;
+    itemLabel.textContent = definitionLabel(definition);
     link.append(itemLabel);
     channels.append(link);
   }
@@ -332,7 +517,7 @@ function createCategory(owner, definitions, name, categoryId) {
   heading.append(title, ownerLabel);
   const total = document.createElement('div');
   total.className = 'category-total';
-  total.textContent = `${definitions.length} 項目`;
+  total.textContent = t(definitions.length === 1 ? 'item' : 'items', { count: definitions.length });
   header.append(mark, heading, total);
   category.append(header);
   definitions.forEach(definition => category.append(createSettingRow(definition)));
@@ -371,25 +556,32 @@ function render() {
   activateNavigation();
 }
 
+function updateExpiry() {
+  if (!state.expiresAt) return;
+  const locale = state.language === 'ja' ? 'ja-JP' : 'en-US';
+  const date = new Date(state.expiresAt * 1000).toLocaleString(locale);
+  document.getElementById('expiry').textContent = t('expiry', { date });
+}
+
 async function initialize() {
   try {
     let token;
     try {
       token = decodeURIComponent(location.hash.slice(1)).trim();
     } catch (error) {
-      throw new Error('EditorリンクのURLエンコードが壊れています。Discordで /editor を再実行してください。');
+      throw new Error(t('invalidUrlEncoding'));
     }
     const parts = token.split('.', 5);
     if (parts.length !== 5 || parts[0] !== 'XE4E' || parts[1] !== '1') {
-      throw new Error('有効なXecute Editorリンクではありません。Discordで /editor を実行してください。');
+      throw new Error(t('invalidLink'));
     }
     const authorization = await decompressJson(parts[2]);
     const payload = await decompressJson(parts[4]);
     if (!authorization.g || !authorization.e || !authorization.n || !Array.isArray(payload.d) || !payload.v) {
-      throw new Error('Editorリンクのデータが破損しています。');
+      throw new Error(t('corruptedPayload'));
     }
     if (authorization.e < Math.floor(Date.now() / 1000)) {
-      throw new Error('このEditorリンクは期限切れです。Discordで /editor を再実行してください。');
+      throw new Error(t('expiredLink'));
     }
 
     state.authorization = parts[2];
@@ -398,12 +590,14 @@ async function initialize() {
     state.definitions = payload.d;
     state.original = structuredClone(payload.v);
     state.values = structuredClone(payload.v);
+    state.expiresAt = authorization.e;
+    state.initialized = true;
 
     const guildName = payload.n || 'Discord Server';
     document.getElementById('guildName').textContent = guildName;
     document.getElementById('sidebarGuildName').textContent = guildName;
     document.getElementById('serverInitial').textContent = guildName.charAt(0).toUpperCase();
-    document.getElementById('expiry').textContent = `有効期限: ${new Date(authorization.e * 1000).toLocaleString()}`;
+    updateExpiry();
     render();
   } catch (error) {
     showMessage(error.message || String(error), 'error');
@@ -415,10 +609,14 @@ themeToggle.addEventListener('click', () => {
   applyTheme(next, true);
 });
 
+languageSelect.addEventListener('change', () => {
+  applyLanguage(languageSelect.value, true);
+});
+
 document.getElementById('resetButton').addEventListener('click', () => {
   state.values = structuredClone(state.original);
   render();
-  showMessage('設定をEditorを開いた時点の値へ戻しました。', '');
+  showMessage(t('resetComplete'), '');
 });
 
 document.getElementById('copyButton').addEventListener('click', async () => {
@@ -427,14 +625,20 @@ document.getElementById('copyButton').addEventListener('click', async () => {
     const payload = await compressJson({ v: state.values });
     const code = `XE4.1.${state.authorization}.${state.signature}.${payload}`;
     if (code.length > 6000) {
-      throw new Error('設定コードがDiscordの入力上限を超えました。設定項目を減らしてください。');
+      throw new Error(t('codeTooLarge'));
     }
-    await navigator.clipboard.writeText(code);
-    showMessage('適用コードをコピーしました。Discordで /apply の code に貼り付けてください。', 'success');
+    try {
+      await navigator.clipboard.writeText(code);
+    } catch (error) {
+      throw new Error(t('clipboardFailed'));
+    }
+    showMessage(t('copyComplete'), 'success');
   } catch (error) {
     showMessage(error.message || String(error), 'error');
   }
 });
 
+state.language = storedLanguage();
 applyTheme(storedTheme(), false);
+applyLanguage(state.language, false);
 initialize();

@@ -128,6 +128,17 @@ h1, h2, h3, p { margin-top: 0; }
   font-size: 12px;
   font-weight: 700;
 }
+.language-select {
+  width: auto;
+  min-height: 32px;
+  padding: 6px 28px 6px 9px;
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+  background: var(--surface-soft);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 680;
+}
 .theme-toggle:hover { background: var(--surface-hover); }
 .theme-icon { width: 15px; font-size: 15px; line-height: 1; text-align: center; }
 .theme-icon-dark { display: none; }
@@ -394,6 +405,7 @@ button.primary:hover { border-color: var(--accent-hover); background: var(--acce
   .brand { height: 62px; margin-top: 0; }
   .brand-status-text, .safe-badge, .action-note { display: none; }
   .theme-toggle { padding: 6px 8px; }
+  .language-select { min-height: 30px; padding-top: 5px; padding-bottom: 5px; }
   .hero { padding-right: 0; padding-left: 0; }
   .category-total { display: none; }
   .setting { padding-right: 0; padding-left: 0; }

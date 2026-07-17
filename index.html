@@ -19,8 +19,12 @@
         <div class="subtitle">STATIC CONFIGURATION</div>
       </div>
       <div class="brand-status">
-        <span class="brand-status-text">サーバーと通信しない静的エディター</span>
-        <span class="safe-badge">ローカル処理</span>
+        <span class="brand-status-text" data-i18n="brandStatus">サーバーと通信しない静的エディター</span>
+        <span class="safe-badge" data-i18n="localProcessing">ローカル処理</span>
+        <select id="languageSelect" class="language-select" aria-label="表示言語">
+          <option value="ja">日本語</option>
+          <option value="en">English</option>
+        </select>
         <button id="themeToggle" class="theme-toggle" type="button" aria-label="ダークモードに切り替える" aria-pressed="false">
           <span class="theme-icon theme-icon-light" aria-hidden="true">☀</span>
           <span class="theme-icon theme-icon-dark" aria-hidden="true">☾</span>
@@ -32,12 +36,12 @@
     <div id="message" class="notice hidden" role="status" aria-live="polite"></div>
     <section id="editor" class="workspace hidden">
       <aside class="sidebar">
-        <div class="sidebar-kicker"><span aria-hidden="true">←</span><span>サーバー設定</span></div>
+        <div class="sidebar-kicker"><span aria-hidden="true">←</span><span data-i18n="serverSettings">サーバー設定</span></div>
         <div class="server-summary">
           <div id="serverInitial" class="server-icon">D</div>
           <div class="server-text">
             <div id="sidebarGuildName" class="server-name">Discord Server</div>
-            <div class="server-label">Xecute settings</div>
+            <div class="server-label" data-i18n="xecuteSettings">Xecute 設定</div>
           </div>
         </div>
         <nav id="navigation" class="navigation" aria-label="設定一覧"></nav>
@@ -45,9 +49,9 @@
 
       <div class="content">
         <header id="pageTop" class="hero">
-          <div class="eyebrow">Server configuration</div>
+          <div class="eyebrow" data-i18n="serverConfiguration">サーバー設定</div>
           <h2 id="guildName">Discord Server</h2>
-          <div class="hero-copy">Xross Engineと各プラグインが公開している設定を、このページからまとめて編集できます。</div>
+          <div class="hero-copy" data-i18n="heroCopy">Xross Engineと各プラグインが公開している設定を、このページからまとめて編集できます。</div>
           <div id="expiry" class="expiry-badge"></div>
         </header>
         <div id="settings" class="settings"></div>
@@ -56,10 +60,10 @@
   </main>
 
   <div id="actions" class="actions hidden">
-    <div class="muted action-note">設定はこのブラウザー内だけで処理されます。</div>
+    <div class="muted action-note" data-i18n="actionNote">設定はこのブラウザー内だけで処理されます。</div>
     <div class="button-row">
-      <button id="resetButton" type="button">元に戻す</button>
-      <button id="copyButton" class="primary" type="button">適用コードをコピー</button>
+      <button id="resetButton" type="button" data-i18n="reset">元に戻す</button>
+      <button id="copyButton" class="primary" type="button" data-i18n="copy">適用コードをコピー</button>
     </div>
   </div>
 </body>
