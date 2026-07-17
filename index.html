@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'; connect-src 'none'">
+  <title>Xecute Editor 4</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --background: #090d17;
+      --panel: #111827;
+      --panel-2: #172033;
+      --border: #28344d;
+      --text: #eef2ff;
+      --muted: #9ba8c3;
+      --accent: #7c6cff;
+      --accent-hover: #9588ff;
+      --success: #34d399;
+      --danger: #fb7185;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at top left, #1a2450 0, transparent 35%), var(--background);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    button, input, select { font: inherit; }
+    .shell { width: min(980px, calc(100% - 32px)); margin: 0 auto; padding: 48px 0 120px; }
+    .brand { display: flex; align-items: center; gap: 14px; margin-bottom: 32px; }
+    .logo {
+      width: 44px; height: 44px; border-radius: 14px;
+      display: grid; place-items: center; font-weight: 900; font-size: 20px;
+      background: linear-gradient(135deg, var(--accent), #3dd6d0);
+      box-shadow: 0 12px 40px rgba(124, 108, 255, .35);
+    }
+    h1, h2, p { margin-top: 0; }
+    h1 { margin-bottom: 5px; font-size: clamp(25px, 4vw, 36px); }
+    .subtitle, .muted { color: var(--muted); }
+    .card {
+      border: 1px solid var(--border); border-radius: 20px; background: rgba(17, 24, 39, .92);
+      box-shadow: 0 20px 70px rgba(0, 0, 0, .28); overflow: hidden;
+    }
+    .card-header { padding: 24px 28px; border-bottom: 1px solid var(--border); }
+    .card-header h2 { margin-bottom: 5px; }
+    .settings { padding: 4px 28px; }
+    .setting {
+      display: grid; grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr);
+      gap: 26px; align-items: center; padding: 22px 0; border-bottom: 1px solid var(--border);
+    }
+    .setting:last-child { border-bottom: 0; }
+    .setting-title { font-weight: 750; margin-bottom: 5px; }
+    .setting-key { color: #7584a5; font: 12px ui-monospace, SFMono-Regular, Consolas, monospace; margin-top: 7px; }
+    input[type="text"], input[type="number"], select {
+      width: 100%; min-height: 44px; border: 1px solid #3a4763; border-radius: 11px;
+      background: #0d1423; color: var(--text); padding: 10px 12px; outline: none;
+    }
+    input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(124,108,255,.18); }
+    .switch { display: flex; align-items: center; gap: 10px; justify-content: flex-start; cursor: pointer; }
+    .switch input { width: 21px; height: 21px; accent-color: var(--accent); }
+    .actions {
+      position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%);
+      width: min(920px, calc(100% - 28px)); display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; padding: 14px 16px; border: 1px solid var(--border); border-radius: 16px;
+      background: rgba(13, 20, 35, .9); backdrop-filter: blur(14px); box-shadow: 0 16px 50px rgba(0,0,0,.4);
+    }
+    .button-row { display: flex; gap: 10px; }
+    button {
+      border: 1px solid var(--border); border-radius: 11px; padding: 10px 16px;
+      background: var(--panel-2); color: var(--text); font-weight: 750; cursor: pointer;
+    }
+    button:hover { border-color: #4b5b7c; }
+    button.primary { background: var(--accent); border-color: var(--accent); }
+    button.primary:hover { background: var(--accent-hover); }
+    .notice { padding: 16px 18px; border-radius: 13px; margin-bottom: 18px; border: 1px solid var(--border); background: var(--panel); }
+    .notice.error { border-color: rgba(251,113,133,.55); color: #fecdd3; }
+    .notice.success { border-color: rgba(52,211,153,.5); color: #a7f3d0; }
+    .hidden { display: none !important; }
+    code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+    @media (max-width: 700px) {
+      .shell { padding-top: 28px; }
+      .setting { grid-template-columns: 1fr; gap: 13px; }
+      .actions { align-items: stretch; flex-direction: column; }
+      .button-row { width: 100%; }
+      .button-row button { flex: 1; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="brand">
+      <div class="logo">X</div>
+      <div>
+        <h1>Xecute Editor 4</h1>
+        <div class="subtitle">サーバーと通信しない、静的な設定エディター</div>
+      </div>
+    </header>
+
+    <div id="message" class="notice hidden"></div>
+    <section id="editor" class="card hidden">
+      <div class="card-header">
+        <h2 id="guildName">Discord Server</h2>
+        <div id="expiry" class="muted"></div>
+      </div>
+      <div id="settings" class="settings"></div>
+    </section>
+  </main>
+
+  <div id="actions" class="actions hidden">
+    <div class="muted">設定はこのブラウザー内だけで処理されます。</div>
+    <div class="button-row">
+      <button id="resetButton" type="button">元に戻す</button>
+      <button id="copyButton" class="primary" type="button">適用コードをコピー</button>
+    </div>
+  </div>
+
+  <script>
+    'use strict';
+
+    const state = { authorization: '', signature: '', definitions: [], original: {}, values: {} };
+    const message = document.getElementById('message');
+    const editor = document.getElementById('editor');
+    const actions = document.getElementById('actions');
+    const settingsRoot = document.getElementById('settings');
+
+    function showMessage(text, type) {
+      message.textContent = text;
+      message.className = `notice ${type || ''}`;
+    }
+
+    function base64UrlToBytes(value) {
+      let normalized;
+      try {
+        normalized = decodeURIComponent(value).replace(/\s/g, '');
+      } catch (error) {
+        throw new Error('EditorリンクのURLエンコードが壊れています。Discordで /editor を再実行してください。');
+      }
+      if (!/^[A-Za-z0-9_-]+$/.test(normalized) || normalized.length % 4 === 1) {
+        throw new Error('EditorリンクのBase64URLデータが壊れています。Discordで /editor を再実行してください。');
+      }
+      const padding = '='.repeat((4 - normalized.length % 4) % 4);
+      try {
+        const binary = atob(normalized.replace(/-/g, '+').replace(/_/g, '/') + padding);
+        return Uint8Array.from(binary, character => character.charCodeAt(0));
+      } catch (error) {
+        throw new Error('EditorリンクをBase64URLとして復元できません。Discordで /editor を再実行してください。');
+      }
+    }
+
+    function bytesToBase64Url(bytes) {
+      let binary = '';
+      for (const byte of bytes) binary += String.fromCharCode(byte);
+      return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+    }
+
+    async function decompressJson(encoded) {
+      if (typeof DecompressionStream === 'undefined') throw new Error('このブラウザーは圧縮設定コードに対応していません。');
+      const stream = new Blob([base64UrlToBytes(encoded)]).stream().pipeThrough(new DecompressionStream('deflate'));
+      const text = await new Response(stream).text();
+      return JSON.parse(text);
+    }
+
+    async function compressJson(value) {
+      if (typeof CompressionStream === 'undefined') throw new Error('このブラウザーは設定コード生成に対応していません。');
+      const input = new TextEncoder().encode(JSON.stringify(value));
+      const stream = new Blob([input]).stream().pipeThrough(new CompressionStream('deflate'));
+      return bytesToBase64Url(new Uint8Array(await new Response(stream).arrayBuffer()));
+    }
+
+    function validateDefinition(definition, value) {
+      if (definition.t === 'BOOLEAN' && typeof value !== 'boolean') throw new Error(`${definition.l}: 真偽値が必要です。`);
+      if (definition.t === 'INTEGER') {
+        if (!Number.isInteger(value)) throw new Error(`${definition.l}: 整数が必要です。`);
+        if (definition.n != null && value < definition.n) throw new Error(`${definition.l}: 最小値は ${definition.n} です。`);
+        if (definition.x != null && value > definition.x) throw new Error(`${definition.l}: 最大値は ${definition.x} です。`);
+      }
+      if (definition.t === 'STRING') {
+        if (typeof value !== 'string') throw new Error(`${definition.l}: 文字列が必要です。`);
+        if (definition.n != null && value.length < definition.n) throw new Error(`${definition.l}: ${definition.n}文字以上必要です。`);
+        if (definition.x != null && value.length > definition.x) throw new Error(`${definition.l}: ${definition.x}文字以内にしてください。`);
+      }
+      if (definition.t === 'SELECT' && !(definition.c || []).some(choice => choice.v === value)) {
+        throw new Error(`${definition.l}: 選択値が不正です。`);
+      }
+      if ((definition.t === 'CHANNEL' || definition.t === 'ROLE') && !/^(0|[1-9][0-9]{5,24})$/.test(value)) {
+        throw new Error(`${definition.l}: Discord IDまたは0を入力してください。`);
+      }
+    }
+
+    function createInput(definition) {
+      const value = state.values[definition.k];
+      let input;
+      if (definition.t === 'BOOLEAN') {
+        const wrapper = document.createElement('label');
+        wrapper.className = 'switch';
+        input = document.createElement('input');
+        input.type = 'checkbox';
+        input.checked = Boolean(value);
+        const text = document.createElement('span');
+        text.textContent = input.checked ? '有効' : '無効';
+        input.addEventListener('change', () => {
+          state.values[definition.k] = input.checked;
+          text.textContent = input.checked ? '有効' : '無効';
+        });
+        wrapper.append(input, text);
+        return wrapper;
+      }
+      if (definition.t === 'SELECT') {
+        input = document.createElement('select');
+        for (const choice of definition.c || []) {
+          const option = document.createElement('option');
+          option.value = choice.v;
+          option.textContent = choice.l;
+          input.append(option);
+        }
+        input.value = value;
+        input.addEventListener('change', () => { state.values[definition.k] = input.value; });
+        return input;
+      }
+
+      input = document.createElement('input');
+      input.type = definition.t === 'INTEGER' ? 'number' : 'text';
+      input.value = value;
+      if (definition.n != null) input.min = String(definition.n);
+      if (definition.x != null) input.max = String(definition.x);
+      input.addEventListener('input', () => {
+        state.values[definition.k] = definition.t === 'INTEGER' ? Number(input.value) : input.value.trim();
+      });
+      return input;
+    }
+
+    function render() {
+      settingsRoot.replaceChildren();
+      for (const definition of state.definitions) {
+        const row = document.createElement('div');
+        row.className = 'setting';
+        const information = document.createElement('div');
+        const title = document.createElement('div');
+        title.className = 'setting-title';
+        title.textContent = definition.l;
+        const description = document.createElement('div');
+        description.className = 'muted';
+        description.textContent = `設定項目: ${definition.k}`;
+        const key = document.createElement('div');
+        key.className = 'setting-key';
+        key.textContent = definition.k;
+        information.append(title, description, key);
+        row.append(information, createInput(definition));
+        settingsRoot.append(row);
+      }
+      editor.classList.remove('hidden');
+      actions.classList.remove('hidden');
+    }
+
+    async function initialize() {
+      try {
+        let token;
+        try {
+          token = decodeURIComponent(location.hash.slice(1)).trim();
+        } catch (error) {
+          throw new Error('EditorリンクのURLエンコードが壊れています。Discordで /editor を再実行してください。');
+        }
+        const parts = token.split('.', 5);
+        if (parts.length !== 5 || parts[0] !== 'XE4E' || parts[1] !== '1') throw new Error('有効なXecute Editorリンクではありません。Discordで /editor を実行してください。');
+        const authorization = await decompressJson(parts[2]);
+        const payload = await decompressJson(parts[4]);
+        if (!authorization.g || !authorization.e || !authorization.n || !Array.isArray(payload.d) || !payload.v) throw new Error('Editorリンクのデータが破損しています。');
+        if (authorization.e < Math.floor(Date.now() / 1000)) throw new Error('このEditorリンクは期限切れです。Discordで /editor を再実行してください。');
+
+        state.authorization = parts[2];
+        state.signature = parts[3];
+        state.definitions = payload.d;
+        state.original = structuredClone(payload.v);
+        state.values = structuredClone(payload.v);
+        document.getElementById('guildName').textContent = payload.n || 'Discord Server';
+        document.getElementById('expiry').textContent = `有効期限: ${new Date(authorization.e * 1000).toLocaleString()}`;
+        render();
+      } catch (error) {
+        showMessage(error.message || String(error), 'error');
+      }
+    }
+
+    document.getElementById('resetButton').addEventListener('click', () => {
+      state.values = structuredClone(state.original);
+      render();
+      showMessage('設定をEditorを開いた時点の値へ戻しました。', '');
+    });
+
+    document.getElementById('copyButton').addEventListener('click', async () => {
+      try {
+        for (const definition of state.definitions) validateDefinition(definition, state.values[definition.k]);
+        const payload = await compressJson({ v: state.values });
+        const code = `XE4.1.${state.authorization}.${state.signature}.${payload}`;
+        if (code.length > 6000) throw new Error('設定コードがDiscordの入力上限を超えました。設定項目を減らしてください。');
+        await navigator.clipboard.writeText(code);
+        showMessage('適用コードをコピーしました。Discordで /apply の code に貼り付けてください。', 'success');
+      } catch (error) {
+        showMessage(error.message || String(error), 'error');
+      }
+    });
+
+    initialize();
+  </script>
+</body>
+</html>
