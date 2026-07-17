@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta name="color-scheme" content="light dark">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; script-src 'self'; img-src data:; base-uri 'none'; form-action 'none'; connect-src 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; script-src 'self'; img-src data:; base-uri 'none'; form-action 'none'; connect-src https://cdn.discordapp.com https://media.discordapp.net">
   <title>Xecute Editor 4</title>
   <link rel="stylesheet" href="index.css">
   <script src="index.js" defer></script>
@@ -34,6 +34,16 @@
     </header>
 
     <div id="message" class="notice hidden" role="status" aria-live="polite"></div>
+    <section id="importPanel" class="import-panel hidden" aria-labelledby="importTitle">
+      <div class="import-icon" aria-hidden="true">⇧</div>
+      <div class="import-copy">
+        <h2 id="importTitle" data-i18n="importTitle">Editorセッションを手動で読み込む</h2>
+        <p data-i18n="importDescription">Discordの/editor応答に添付されたXecuteSession.xe4eをここへドロップするか、ファイルを選択してください。</p>
+        <div id="dropZone" class="drop-zone" tabindex="0" role="button" data-i18n="dropZone">XecuteSession.xe4eをドロップ</div>
+      </div>
+      <button id="chooseSessionButton" type="button" data-i18n="chooseSession">ファイルを選択</button>
+      <input id="sessionFileInput" class="hidden" type="file" accept=".xe4e,application/octet-stream">
+    </section>
     <section id="editor" class="workspace hidden">
       <aside class="sidebar">
         <div class="sidebar-kicker"><span aria-hidden="true">←</span><span data-i18n="serverSettings">サーバー設定</span></div>
@@ -63,6 +73,7 @@
     <div class="muted action-note" data-i18n="actionNote">設定はこのブラウザー内だけで処理されます。</div>
     <div class="button-row">
       <button id="resetButton" type="button" data-i18n="reset">元に戻す</button>
+      <button id="downloadButton" type="button" data-i18n="download">適用ファイルを保存</button>
       <button id="copyButton" class="primary" type="button" data-i18n="copy">適用コードをコピー</button>
     </div>
   </div>

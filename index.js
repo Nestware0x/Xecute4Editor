@@ -2,9 +2,12 @@
 
 const THEME_STORAGE_KEY = 'xecute-editor-theme';
 const LANGUAGE_STORAGE_KEY = 'xecute-editor-language';
+const SESSION_LINK_PREFIX = 'XE4C.1';
+const SESSION_FILE_MAGIC = new TextEncoder().encode('XE4EA1');
+const MAX_SESSION_FILE_BYTES = 64 * 1024;
 const I18N = {
   ja: {
-    brandStatus: 'サーバーと通信しない静的エディター',
+    brandStatus: 'Discord添付連携の静的エディター',
     localProcessing: 'ローカル処理',
     serverSettings: 'サーバー設定',
     xecuteSettings: 'Xecute 設定',
@@ -12,7 +15,12 @@ const I18N = {
     heroCopy: 'Xross Engineと各プラグインが公開している設定を、このページからまとめて編集できます。',
     actionNote: '設定はこのブラウザー内だけで処理されます。',
     reset: '元に戻す',
+    download: '適用ファイルを保存',
     copy: '適用コードをコピー',
+    importTitle: 'Editorセッションを手動で読み込む',
+    importDescription: 'Discordの /editor 応答に添付されたXecuteSession.xe4eをここへドロップするか、ファイルを選択してください。',
+    dropZone: 'XecuteSession.xe4eをドロップ',
+    chooseSession: 'ファイルを選択',
     navigation: '設定一覧',
     languageAria: '表示言語',
     themeLight: 'ライト',
@@ -40,6 +48,15 @@ const I18N = {
     xrossLanguageDescription: 'Xross EngineとWebエディターで使用する表示言語です。',
     xrossVoiceVolumeLabel: '音声音量',
     xrossVoiceVolumeDescription: 'このDiscordサーバーで再生する音声の音量です（0～100）。',
+    makharaApiKeyDescription: '新しいAPIキーを入力します。保存済みのキーはEditorリンクへ含まれず、空欄なら変更しません。',
+    makharaApiModelDescription: 'Makharaが使用するGeminiモデル名です（例: gemini-1.5-flash）。',
+    makharaHistoryLimitDescription: 'Geminiへ会話の文脈として送信する直近のDiscordメッセージ数です。',
+    makharaCommonPromptDescription: 'このDiscordサーバーの全Makharaプロファイルへ適用する共通ルールです。',
+    makharaActiveProfileDescription: 'メッセージの「AIに聞く」で使用するプロファイルキーです。空欄にすると無効になります。',
+    makharaExternalProfilesDescription: '他ユーザーが所有する個人プロファイルの、このサーバー内での応答を許可します。',
+    welcomeTextEnabledDescription: '初めてボイスチャンネルへ参加したユーザーをテキストで通知します。',
+    welcomeTargetChannelDescription: '新規参加通知を送信するテキストチャンネルです。0の場合は送信しません。',
+    welcomeVoiceEnabledDescription: '初めて参加したユーザーへウェルカム音声を再生します。',
     invalidUrlEncoding: 'EditorリンクのURLエンコードが壊れています。Discordで /editor を再実行してください。',
     invalidBase64: 'EditorリンクのBase64URLデータが壊れています。Discordで /editor を再実行してください。',
     base64RestoreFailed: 'EditorリンクをBase64URLとして復元できません。Discordで /editor を再実行してください。',
@@ -58,12 +75,21 @@ const I18N = {
     invalidSelection: '{label}: 選択値が不正です。',
     discordIdRequired: '{label}: Discord IDまたは0を入力してください。',
     resetComplete: '設定をEditorを開いた時点の値へ戻しました。',
-    codeTooLarge: '設定コードがDiscordの入力上限を超えました。設定項目を減らしてください。',
+    codeTooLarge: '設定コードがDiscordのcode入力上限を超えました。「適用ファイルを保存」を使用してください。',
     clipboardFailed: 'クリップボードへコピーできませんでした。ブラウザーの権限を確認してください。',
-    copyComplete: '適用コードをコピーしました。Discordで /apply の code に貼り付けてください。'
+    copyComplete: '適用コードをコピーしました。Discordで /apply の code に貼り付けてください。',
+    fetchingSession: 'Discordから暗号化されたEditorセッションを読み込んでいます…',
+    fetchFailed: 'Discord CDNからセッションを自動取得できませんでした。/editor 応答のXecuteSession.xe4eを下へドロップしてください。',
+    missingSessionKey: '復号鍵がありません。Discordの /editor 応答にあるEditorリンクをもう一度開いてください。',
+    invalidSessionFile: 'XecuteSession.xe4eの形式が正しくありません。',
+    sessionFileTooLarge: 'Editorセッションファイルが大きすぎます。',
+    decryptUnsupported: 'このブラウザーは暗号化Editorセッションの復号に対応していません。',
+    decryptFailed: 'Editorセッションを復号できませんでした。正しい /editor 応答の添付ファイルを使用してください。',
+    manualLoadComplete: 'Editorセッションを添付ファイルから読み込みました。',
+    downloadComplete: 'XecuteApply.xe4aを保存しました。Discordで /apply の file に指定してください。'
   },
   en: {
-    brandStatus: 'Static editor with no server communication',
+    brandStatus: 'Static editor backed by Discord attachments',
     localProcessing: 'Local only',
     serverSettings: 'Server settings',
     xecuteSettings: 'Xecute settings',
@@ -71,7 +97,12 @@ const I18N = {
     heroCopy: 'Edit settings published by Xross Engine and its plugins together on this page.',
     actionNote: 'Settings are processed only in this browser.',
     reset: 'Reset',
+    download: 'Save apply file',
     copy: 'Copy apply code',
+    importTitle: 'Import the Editor session manually',
+    importDescription: 'Drop XecuteSession.xe4e from the Discord /editor response here, or choose the file.',
+    dropZone: 'Drop XecuteSession.xe4e',
+    chooseSession: 'Choose file',
     navigation: 'Settings navigation',
     languageAria: 'Display language',
     themeLight: 'Light',
@@ -99,6 +130,15 @@ const I18N = {
     xrossLanguageDescription: 'Language used by Xross Engine and the Web Editor.',
     xrossVoiceVolumeLabel: 'Voice volume',
     xrossVoiceVolumeDescription: 'Voice playback volume for this Discord server (0-100).',
+    makharaApiKeyDescription: 'Enter a new API key. Saved keys are never included in Editor links; leave blank to keep the current key.',
+    makharaApiModelDescription: 'Gemini model name used by Makhara, for example gemini-1.5-flash.',
+    makharaHistoryLimitDescription: 'Number of recent Discord messages sent to Gemini as context.',
+    makharaCommonPromptDescription: 'Rules applied to every Makhara profile in this Discord server.',
+    makharaActiveProfileDescription: 'Profile key used by the AI message context-menu action. Leave empty to disable it.',
+    makharaExternalProfilesDescription: 'Allow personal profiles owned by other users to respond in this server.',
+    welcomeTextEnabledDescription: 'Send a text notification when a user joins a voice channel for the first time.',
+    welcomeTargetChannelDescription: 'Text channel for new-member notifications. Enter 0 to disable delivery.',
+    welcomeVoiceEnabledDescription: 'Play a welcome voice message for first-time participants.',
     invalidUrlEncoding: 'The Editor link has invalid URL encoding. Run /editor again in Discord.',
     invalidBase64: 'The Editor link contains invalid Base64URL data. Run /editor again in Discord.',
     base64RestoreFailed: 'The Editor link could not be decoded as Base64URL. Run /editor again in Discord.',
@@ -117,9 +157,18 @@ const I18N = {
     invalidSelection: '{label}: the selected value is invalid.',
     discordIdRequired: '{label}: enter a Discord ID or 0.',
     resetComplete: 'Settings were reset to the values from when the Editor was opened.',
-    codeTooLarge: 'The setting code exceeds the Discord input limit. Reduce the number of settings.',
+    codeTooLarge: 'The setting code exceeds Discord\'s code input limit. Use Save apply file instead.',
     clipboardFailed: 'Could not copy to the clipboard. Check the browser permission.',
-    copyComplete: 'Apply code copied. Paste it into the code option of /apply in Discord.'
+    copyComplete: 'Apply code copied. Paste it into the code option of /apply in Discord.',
+    fetchingSession: 'Loading the encrypted Editor session from Discord…',
+    fetchFailed: 'The session could not be fetched from Discord CDN. Drop XecuteSession.xe4e from the /editor response below.',
+    missingSessionKey: 'The decryption key is missing. Open the Editor link from the Discord /editor response again.',
+    invalidSessionFile: 'This is not a valid XecuteSession.xe4e file.',
+    sessionFileTooLarge: 'The Editor session file is too large.',
+    decryptUnsupported: 'This browser cannot decrypt encrypted Editor sessions.',
+    decryptFailed: 'The Editor session could not be decrypted. Use the attachment from the matching /editor response.',
+    manualLoadComplete: 'The Editor session was loaded from the attachment.',
+    downloadComplete: 'XecuteApply.xe4a was saved. Select it in the file option of /apply in Discord.'
   }
 };
 
@@ -133,6 +182,8 @@ const state = {
   collapsedOwners: new Set(),
   language: 'ja',
   expiresAt: 0,
+  transportKey: '',
+  attachmentUrl: '',
   initialized: false
 };
 
@@ -144,6 +195,9 @@ const navigationRoot = document.getElementById('navigation');
 const themeToggle = document.getElementById('themeToggle');
 const themeLabel = document.getElementById('themeLabel');
 const languageSelect = document.getElementById('languageSelect');
+const importPanel = document.getElementById('importPanel');
+const dropZone = document.getElementById('dropZone');
+const sessionFileInput = document.getElementById('sessionFileInput');
 let navigationObserver;
 
 function t(key, values) {
@@ -247,6 +301,81 @@ function bytesToBase64Url(bytes) {
   let binary = '';
   for (const byte of bytes) binary += String.fromCharCode(byte);
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+
+function hideMessage() {
+  message.className = 'notice hidden';
+  message.textContent = '';
+}
+
+function showImportPanel() {
+  importPanel.classList.remove('hidden');
+}
+
+function hideImportPanel() {
+  importPanel.classList.add('hidden');
+}
+
+function isDiscordAttachmentUrl(value) {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' && (
+      url.hostname === 'cdn.discordapp.com'
+      || url.hostname === 'media.discordapp.net'
+    );
+  } catch (error) {
+    return false;
+  }
+}
+
+async function decryptSessionFile(bytes) {
+  if (!window.crypto || !window.crypto.subtle) {
+    throw new Error(t('decryptUnsupported'));
+  }
+  if (!(bytes instanceof Uint8Array) || bytes.length > MAX_SESSION_FILE_BYTES) {
+    throw new Error(t('sessionFileTooLarge'));
+  }
+  if (bytes.length < SESSION_FILE_MAGIC.length + 12 + 16) {
+    throw new Error(t('invalidSessionFile'));
+  }
+  for (let index = 0; index < SESSION_FILE_MAGIC.length; index++) {
+    if (bytes[index] !== SESSION_FILE_MAGIC[index]) {
+      throw new Error(t('invalidSessionFile'));
+    }
+  }
+  if (!state.transportKey) {
+    throw new Error(t('missingSessionKey'));
+  }
+
+  try {
+    const rawKey = base64UrlToBytes(state.transportKey);
+    if (rawKey.length !== 32) throw new Error(t('decryptFailed'));
+    const key = await crypto.subtle.importKey('raw', rawKey, { name: 'AES-GCM' }, false, ['decrypt']);
+    const ivStart = SESSION_FILE_MAGIC.length;
+    const iv = bytes.slice(ivStart, ivStart + 12);
+    const encrypted = bytes.slice(ivStart + 12);
+    const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, encrypted);
+    return new TextDecoder('utf-8', { fatal: true }).decode(decrypted);
+  } catch (error) {
+    if (error instanceof Error && [t('invalidBase64'), t('base64RestoreFailed'), t('decryptFailed')].includes(error.message)) {
+      throw error;
+    }
+    throw new Error(t('decryptFailed'));
+  }
+}
+
+async function fetchSessionToken() {
+  if (!isDiscordAttachmentUrl(state.attachmentUrl)) {
+    throw new Error(t('invalidLink'));
+  }
+  const response = await fetch(state.attachmentUrl, {
+    cache: 'no-store',
+    credentials: 'omit',
+    referrerPolicy: 'no-referrer'
+  });
+  if (!response.ok) throw new Error(t('fetchFailed'));
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  return decryptSessionFile(bytes);
 }
 
 async function decompressJson(encoded) {
@@ -380,8 +509,20 @@ function groupedDefinitions() {
 }
 
 function settingDescription(definition) {
-  if (definition.k === 'xross.language') return t('xrossLanguageDescription');
-  if (definition.k === 'xross.voice-volume') return t('xrossVoiceVolumeDescription');
+  const knownDescriptions = {
+    'xross.language': 'xrossLanguageDescription',
+    'xross.voice-volume': 'xrossVoiceVolumeDescription',
+    'makhara.api-key': 'makharaApiKeyDescription',
+    'makhara.api-model': 'makharaApiModelDescription',
+    'makhara.history-limit': 'makharaHistoryLimitDescription',
+    'makhara.common-prompt': 'makharaCommonPromptDescription',
+    'makhara.active-profile': 'makharaActiveProfileDescription',
+    'makhara.allow-external-profiles': 'makharaExternalProfilesDescription',
+    'welcome-guild-plugin.text-enabled': 'welcomeTextEnabledDescription',
+    'welcome-guild-plugin.target-channel': 'welcomeTargetChannelDescription',
+    'welcome-guild-plugin.voice-enabled': 'welcomeVoiceEnabledDescription'
+  };
+  if (knownDescriptions[definition.k]) return t(knownDescriptions[definition.k]);
   const localized = localizedText(definition.H, definition.h);
   return localized || switchDescription(definition.t);
 }
@@ -563,45 +704,82 @@ function updateExpiry() {
   document.getElementById('expiry').textContent = t('expiry', { date });
 }
 
+async function initializeToken(token) {
+  const parts = token.trim().split('.', 5);
+  if (parts.length !== 5 || parts[0] !== 'XE4E' || parts[1] !== '1') {
+    throw new Error(t('invalidLink'));
+  }
+  const authorization = await decompressJson(parts[2]);
+  const payload = await decompressJson(parts[4]);
+  if (!authorization.g || !authorization.e || !authorization.n || !Array.isArray(payload.d) || !payload.v) {
+    throw new Error(t('corruptedPayload'));
+  }
+  if (authorization.e < Math.floor(Date.now() / 1000)) {
+    throw new Error(t('expiredLink'));
+  }
+
+  state.authorization = parts[2];
+  state.signature = parts[3];
+  state.categories = payload.c || {};
+  state.definitions = payload.d;
+  state.original = structuredClone(payload.v);
+  state.values = structuredClone(payload.v);
+  state.expiresAt = authorization.e;
+  state.initialized = true;
+
+  const guildName = payload.n || 'Discord Server';
+  document.getElementById('guildName').textContent = guildName;
+  document.getElementById('sidebarGuildName').textContent = guildName;
+  document.getElementById('serverInitial').textContent = guildName.charAt(0).toUpperCase();
+  hideImportPanel();
+  hideMessage();
+  updateExpiry();
+  render();
+}
+
+async function loadSessionFile(file, manual) {
+  if (!file || file.size > MAX_SESSION_FILE_BYTES) {
+    throw new Error(t('sessionFileTooLarge'));
+  }
+  const token = await decryptSessionFile(new Uint8Array(await file.arrayBuffer()));
+  await initializeToken(token);
+  if (manual) showMessage(t('manualLoadComplete'), 'success');
+}
+
 async function initialize() {
+  const hash = location.hash.slice(1);
   try {
+    if (hash.startsWith(`${SESSION_LINK_PREFIX}?`)) {
+      const parameters = new URLSearchParams(hash.slice(SESSION_LINK_PREFIX.length + 1));
+      state.transportKey = parameters.get('k') || '';
+      state.attachmentUrl = parameters.get('u') || '';
+      if (!state.transportKey || !state.attachmentUrl) throw new Error(t('invalidLink'));
+      showMessage(t('fetchingSession'), '');
+      try {
+        await initializeToken(await fetchSessionToken());
+      } catch (error) {
+        showImportPanel();
+        showMessage(t('fetchFailed'), 'error');
+      }
+      return;
+    }
+
     let token;
     try {
-      token = decodeURIComponent(location.hash.slice(1)).trim();
+      token = decodeURIComponent(hash).trim();
     } catch (error) {
       throw new Error(t('invalidUrlEncoding'));
     }
-    const parts = token.split('.', 5);
-    if (parts.length !== 5 || parts[0] !== 'XE4E' || parts[1] !== '1') {
-      throw new Error(t('invalidLink'));
-    }
-    const authorization = await decompressJson(parts[2]);
-    const payload = await decompressJson(parts[4]);
-    if (!authorization.g || !authorization.e || !authorization.n || !Array.isArray(payload.d) || !payload.v) {
-      throw new Error(t('corruptedPayload'));
-    }
-    if (authorization.e < Math.floor(Date.now() / 1000)) {
-      throw new Error(t('expiredLink'));
-    }
-
-    state.authorization = parts[2];
-    state.signature = parts[3];
-    state.categories = payload.c || {};
-    state.definitions = payload.d;
-    state.original = structuredClone(payload.v);
-    state.values = structuredClone(payload.v);
-    state.expiresAt = authorization.e;
-    state.initialized = true;
-
-    const guildName = payload.n || 'Discord Server';
-    document.getElementById('guildName').textContent = guildName;
-    document.getElementById('sidebarGuildName').textContent = guildName;
-    document.getElementById('serverInitial').textContent = guildName.charAt(0).toUpperCase();
-    updateExpiry();
-    render();
+    await initializeToken(token);
   } catch (error) {
     showMessage(error.message || String(error), 'error');
   }
+}
+
+async function createApplyCode() {
+  for (const definition of state.definitions) validateDefinition(definition, state.values[definition.k]);
+  const payload = await compressJson({ v: state.values });
+  return `XE4.1.${state.authorization}.${state.signature}.${payload}`;
 }
 
 themeToggle.addEventListener('click', () => {
@@ -619,11 +797,26 @@ document.getElementById('resetButton').addEventListener('click', () => {
   showMessage(t('resetComplete'), '');
 });
 
+document.getElementById('downloadButton').addEventListener('click', async () => {
+  try {
+    const code = await createApplyCode();
+    const url = URL.createObjectURL(new Blob([code], { type: 'application/octet-stream' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'XecuteApply.xe4a';
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    showMessage(t('downloadComplete'), 'success');
+  } catch (error) {
+    showMessage(error.message || String(error), 'error');
+  }
+});
+
 document.getElementById('copyButton').addEventListener('click', async () => {
   try {
-    for (const definition of state.definitions) validateDefinition(definition, state.values[definition.k]);
-    const payload = await compressJson({ v: state.values });
-    const code = `XE4.1.${state.authorization}.${state.signature}.${payload}`;
+    const code = await createApplyCode();
     if (code.length > 6000) {
       throw new Error(t('codeTooLarge'));
     }
@@ -636,6 +829,45 @@ document.getElementById('copyButton').addEventListener('click', async () => {
   } catch (error) {
     showMessage(error.message || String(error), 'error');
   }
+});
+
+async function importSelectedFile(file) {
+  try {
+    await loadSessionFile(file, true);
+  } catch (error) {
+    showImportPanel();
+    showMessage(error.message || String(error), 'error');
+  }
+}
+
+document.getElementById('chooseSessionButton').addEventListener('click', () => sessionFileInput.click());
+sessionFileInput.addEventListener('change', () => {
+  const [file] = sessionFileInput.files || [];
+  if (file) importSelectedFile(file);
+  sessionFileInput.value = '';
+});
+dropZone.addEventListener('click', () => sessionFileInput.click());
+dropZone.addEventListener('keydown', event => {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    sessionFileInput.click();
+  }
+});
+for (const eventName of ['dragenter', 'dragover']) {
+  dropZone.addEventListener(eventName, event => {
+    event.preventDefault();
+    dropZone.classList.add('dragging');
+  });
+}
+for (const eventName of ['dragleave', 'drop']) {
+  dropZone.addEventListener(eventName, event => {
+    event.preventDefault();
+    dropZone.classList.remove('dragging');
+  });
+}
+dropZone.addEventListener('drop', event => {
+  const [file] = event.dataTransfer.files || [];
+  if (file) importSelectedFile(file);
 });
 
 state.language = storedLanguage();
