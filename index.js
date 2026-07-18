@@ -15,7 +15,8 @@ const I18N = {
     heroCopy: 'Xross Engineと各プラグインが公開している設定を、このページからまとめて編集できます。',
     actionNote: '設定はこのブラウザー内だけで処理されます。',
     reset: '元に戻す',
-    download: '適用ファイルを保存',
+    dragApply: '掴んでDiscordへ',
+    dragHint: 'Discordの入力欄へドロップ',
     copy: '適用コードをコピー',
     importTitle: 'Editorセッションを手動で読み込む',
     importDescription: 'Discordの /editor 応答に添付されたXecuteSession.xe4eをここへドロップするか、ファイルを選択してください。',
@@ -75,7 +76,7 @@ const I18N = {
     invalidSelection: '{label}: 選択値が不正です。',
     discordIdRequired: '{label}: Discord IDまたは0を入力してください。',
     resetComplete: '設定をEditorを開いた時点の値へ戻しました。',
-    codeTooLarge: '設定コードがDiscordのcode入力上限を超えました。「適用ファイルを保存」を使用してください。',
+    codeTooLarge: '設定コードがDiscordのcode入力上限を超えました。「掴んでDiscordへ」を使用してください。',
     clipboardFailed: 'クリップボードへコピーできませんでした。ブラウザーの権限を確認してください。',
     copyComplete: '適用コードをコピーしました。Discordで /apply の code に貼り付けてください。',
     fetchingSession: 'Discordから暗号化されたEditorセッションを読み込んでいます…',
@@ -97,7 +98,8 @@ const I18N = {
     heroCopy: 'Edit settings published by Xross Engine and its plugins together on this page.',
     actionNote: 'Settings are processed only in this browser.',
     reset: 'Reset',
-    download: 'Save apply file',
+    dragApply: 'Drag to Discord',
+    dragHint: 'Drop into the Discord message box',
     copy: 'Copy apply code',
     importTitle: 'Import the Editor session manually',
     importDescription: 'Drop XecuteSession.xe4e from the Discord /editor response here, or choose the file.',
@@ -157,7 +159,7 @@ const I18N = {
     invalidSelection: '{label}: the selected value is invalid.',
     discordIdRequired: '{label}: enter a Discord ID or 0.',
     resetComplete: 'Settings were reset to the values from when the Editor was opened.',
-    codeTooLarge: 'The setting code exceeds Discord\'s code input limit. Use Save apply file instead.',
+    codeTooLarge: 'The setting code exceeds Discord\'s code input limit. Use Drag to Discord instead.',
     clipboardFailed: 'Could not copy to the clipboard. Check the browser permission.',
     copyComplete: 'Apply code copied. Paste it into the code option of /apply in Discord.',
     fetchingSession: 'Loading the encrypted Editor session from Discord…',
@@ -198,7 +200,11 @@ const languageSelect = document.getElementById('languageSelect');
 const importPanel = document.getElementById('importPanel');
 const dropZone = document.getElementById('dropZone');
 const sessionFileInput = document.getElementById('sessionFileInput');
+const dragApply = document.getElementById('dragApply');
 let navigationObserver;
+let dragApplyUrl = '';
+let dragApplyCode = '';
+let dragPreparation = 0;
 
 function t(key, values) {
   const dictionary = I18N[state.language] || I18N.ja;
@@ -735,6 +741,7 @@ async function initializeToken(token) {
   hideMessage();
   updateExpiry();
   render();
+  prepareDragApply();
 }
 
 async function loadSessionFile(file, manual) {
@@ -782,6 +789,33 @@ async function createApplyCode() {
   return `XE4.1.${state.authorization}.${state.signature}.${payload}`;
 }
 
+async function prepareDragApply() {
+  if (!state.initialized) return;
+  const preparation = ++dragPreparation;
+  try {
+    const code = await createApplyCode();
+    if (preparation !== dragPreparation) return;
+    const nextUrl = URL.createObjectURL(new Blob([code], { type: 'application/octet-stream' }));
+    if (dragApplyUrl) URL.revokeObjectURL(dragApplyUrl);
+    dragApplyCode = code;
+    dragApplyUrl = nextUrl;
+    dragApply.classList.add('ready');
+  } catch (error) {
+    dragApply.classList.remove('ready');
+  }
+}
+
+function downloadApplyFallback() {
+  if (!dragApplyUrl) return;
+  const link = document.createElement('a');
+  link.href = dragApplyUrl;
+  link.download = 'XecuteApply.xe4a';
+  document.body.append(link);
+  link.click();
+  link.remove();
+  showMessage(t('downloadComplete'), 'success');
+}
+
 themeToggle.addEventListener('click', () => {
   const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
   applyTheme(next, true);
@@ -794,23 +828,31 @@ languageSelect.addEventListener('change', () => {
 document.getElementById('resetButton').addEventListener('click', () => {
   state.values = structuredClone(state.original);
   render();
+  prepareDragApply();
   showMessage(t('resetComplete'), '');
 });
 
-document.getElementById('downloadButton').addEventListener('click', async () => {
-  try {
-    const code = await createApplyCode();
-    const url = URL.createObjectURL(new Blob([code], { type: 'application/octet-stream' }));
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'XecuteApply.xe4a';
-    document.body.append(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    showMessage(t('downloadComplete'), 'success');
-  } catch (error) {
-    showMessage(error.message || String(error), 'error');
+dragApply.addEventListener('pointerenter', prepareDragApply);
+dragApply.addEventListener('pointerdown', prepareDragApply);
+dragApply.addEventListener('dragstart', event => {
+  if (!dragApplyUrl || !dragApplyCode) {
+    event.preventDefault();
+    prepareDragApply();
+    return;
+  }
+  event.dataTransfer.effectAllowed = 'copy';
+  event.dataTransfer.setData(
+    'DownloadURL',
+    `application/octet-stream:XecuteApply.xe4a:data:application/octet-stream;base64,${btoa(dragApplyCode)}`
+  );
+  dragApply.classList.add('dragging');
+});
+dragApply.addEventListener('dragend', () => dragApply.classList.remove('dragging'));
+dragApply.addEventListener('click', downloadApplyFallback);
+dragApply.addEventListener('keydown', event => {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    downloadApplyFallback();
   }
 });
 

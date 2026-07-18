@@ -410,6 +410,29 @@ input:focus, select:focus { border-color: var(--accent); background: var(--surfa
   backdrop-filter: blur(16px);
 }
 .button-row { display: flex; flex-wrap: wrap; gap: 9px; }
+.drag-apply {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 7px;
+  background: var(--surface-soft);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 720;
+  outline: none;
+  cursor: grab;
+  user-select: none;
+}
+.drag-apply:hover, .drag-apply:focus, .drag-apply.ready {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.drag-apply.dragging { opacity: .72; cursor: grabbing; transform: scale(.98); }
+.drag-grip { color: var(--accent); font-size: 18px; line-height: 1; }
+.drag-hint { color: var(--muted); font-size: 10px; font-weight: 560; }
 button {
   padding: 9px 14px;
   border: 1px solid var(--border-strong);
@@ -456,6 +479,8 @@ button.primary:hover { border-color: var(--accent-hover); background: var(--acce
   .actions { right: 12px; bottom: 12px; min-width: calc(100% - 24px); }
   .button-row { width: 100%; }
   .button-row button { flex: 1; }
+  .drag-apply { width: 100%; justify-content: center; }
+  .drag-hint { display: none; }
   .import-panel { grid-template-columns: 1fr; margin-top: 28px; }
   .import-icon { display: none; }
   .import-panel > button { width: 100%; }

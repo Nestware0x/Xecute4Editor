@@ -73,7 +73,11 @@
     <div class="muted action-note" data-i18n="actionNote">設定はこのブラウザー内だけで処理されます。</div>
     <div class="button-row">
       <button id="resetButton" type="button" data-i18n="reset">元に戻す</button>
-      <button id="downloadButton" type="button" data-i18n="download">適用ファイルを保存</button>
+      <div id="dragApply" class="drag-apply" draggable="true" tabindex="0" role="button" aria-describedby="dragApplyHint">
+        <span class="drag-grip" aria-hidden="true">⠿</span>
+        <span data-i18n="dragApply">掴んでDiscordへ</span>
+        <span id="dragApplyHint" class="drag-hint" data-i18n="dragHint">Discordの入力欄へドロップ</span>
+      </div>
       <button id="copyButton" class="primary" type="button" data-i18n="copy">適用コードをコピー</button>
     </div>
   </div>
