@@ -15,7 +15,6 @@ const I18N = {
     download: '適用ファイルをダウンロード',
     guildScope: 'サーバー設定',
     userScope: 'ユーザー設定',
-    settingsScope: '設定対象',
     noSettingsForScope: 'この対象で利用できる設定はありません。',
     copy: '適用コードをコピー',
     importTitle: 'Editorセッションを手動で読み込む',
@@ -98,7 +97,6 @@ const I18N = {
     download: 'Download apply file',
     guildScope: 'Server settings',
     userScope: 'User settings',
-    settingsScope: 'Settings scope',
     noSettingsForScope: 'No settings are available for this scope.',
     copy: 'Copy apply code',
     importTitle: 'Import the Editor session manually',
@@ -201,7 +199,6 @@ const languageSelect = document.getElementById('languageSelect');
 const importPanel = document.getElementById('importPanel');
 const dropZone = document.getElementById('dropZone');
 const sessionFileInput = document.getElementById('sessionFileInput');
-const scopeSwitch = document.querySelector('.scope-switch');
 let navigationObserver;
 
 function t(key, values) {
@@ -251,7 +248,6 @@ function applyLanguage(language, persist) {
   document.documentElement.lang = state.language;
   languageSelect.value = state.language;
   languageSelect.setAttribute('aria-label', t('languageAria'));
-  scopeSwitch.setAttribute('aria-label', t('settingsScope'));
   navigationRoot.setAttribute('aria-label', t('navigation'));
   document.querySelectorAll('[data-i18n]').forEach(element => {
     element.textContent = t(element.dataset.i18n);
@@ -504,7 +500,6 @@ function elementId(prefix, value) {
 function groupedDefinitions() {
   const groups = new Map();
   for (const definition of state.definitions) {
-    if ((definition.s || 'GUILD') !== state.scope) continue;
     const owner = ownerFor(definition);
     if (!groups.has(owner)) groups.set(owner, []);
     groups.get(owner).push(definition);
@@ -711,11 +706,6 @@ function render() {
   const guildScope = state.scope === 'GUILD';
   document.getElementById('scopeEyebrow').textContent = t(guildScope ? 'serverConfiguration' : 'userScope');
   document.getElementById('sidebarScopeLabel').textContent = t(guildScope ? 'serverSettings' : 'userScope');
-  document.querySelectorAll('.scope-button').forEach(button => {
-    const active = button.dataset.scope === state.scope;
-    button.classList.toggle('active', active);
-    button.setAttribute('aria-selected', String(active));
-  });
 
   editor.classList.remove('hidden');
   actions.classList.remove('hidden');
@@ -736,7 +726,8 @@ async function initializeToken(token) {
   }
   const authorization = await decompressJson(parts[2]);
   const payload = await decompressJson(parts[4]);
-  if (!authorization.g || !authorization.e || !authorization.n || !Array.isArray(payload.d) || !payload.v) {
+  const scope = authorization.s === 'USER' ? 'USER' : 'GUILD';
+  if ((scope === 'GUILD' && !authorization.g) || !authorization.u || !authorization.e || !authorization.n || !Array.isArray(payload.d) || !payload.v) {
     throw new Error(t('corruptedPayload'));
   }
   if (authorization.e < Math.floor(Date.now() / 1000)) {
@@ -744,6 +735,7 @@ async function initializeToken(token) {
   }
 
   state.authorization = parts[2];
+  state.scope = scope;
   state.signature = parts[3];
   state.categories = payload.c || {};
   state.definitions = payload.d;
@@ -851,11 +843,6 @@ document.getElementById('downloadButton').addEventListener('click', async () => 
   }
 });
 
-document.querySelectorAll('.scope-button').forEach(button => button.addEventListener('click', () => {
-  state.scope = button.dataset.scope === 'USER' ? 'USER' : 'GUILD';
-  render();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}));
 
 document.getElementById('copyButton').addEventListener('click', async () => {
   try {

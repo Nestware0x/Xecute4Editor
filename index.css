@@ -313,18 +313,6 @@ html[data-theme="dark"] .theme-icon-dark { display: inline; }
 .nav-channel:hover, .nav-channel.active { color: var(--text); background: var(--surface-hover); }
 
 .content { width: min(1120px, 100%); min-width: 0; padding: 8px 0 30px; }
-.scope-switch {
-  width: fit-content;
-  display: inline-flex;
-  gap: 4px;
-  margin-bottom: 22px;
-  padding: 4px;
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  background: var(--surface-soft);
-}
-.scope-button { border: 0; background: transparent; color: var(--muted); }
-.scope-button.active { background: var(--surface); color: var(--text); box-shadow: 0 2px 8px rgba(0, 0, 0, .09); }
 .scope-empty {
   padding: 38px 24px;
   border: 1px dashed var(--border-strong);
