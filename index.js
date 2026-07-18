@@ -15,7 +15,7 @@ const I18N = {
     guildScope: 'サーバー設定',
     userScope: 'ユーザー設定',
     noSettingsForScope: 'この対象で利用できる設定はありません。',
-    copy: '適用コードをコピー',
+    copy: '適用コマンドをコピー',
     importTitle: 'Editorセッションを手動で読み込む',
     importDescription: 'Discordの /editor 応答に添付されたXecuteSession.xe4eをここへドロップするか、ファイルを選択してください。',
     dropZone: 'XecuteSession.xe4eをドロップ',
@@ -76,7 +76,7 @@ const I18N = {
     resetComplete: '設定をEditorを開いた時点の値へ戻しました。',
     codeTooLarge: '設定コードがDiscordのcode入力上限を超えました。適用ファイルをダウンロードしてください。',
     clipboardFailed: 'クリップボードへコピーできませんでした。ブラウザーの権限を確認してください。',
-    copyComplete: '適用コードをコピーしました。Discordで /apply の code に貼り付けてください。',
+    copyComplete: '適用コマンドをコピーしました。Discordへ貼り付けてEnterを押すだけで適用できます。',
     fetchingSession: 'Discordから暗号化されたEditorセッションを読み込んでいます…',
     fetchFailed: 'Discord CDNからセッションを自動取得できませんでした。/editor 応答のXecuteSession.xe4eを下へドロップしてください。',
     fetchExpired: 'Discord添付の有効期限が切れたか、アクセスできません。/editor をもう一度実行してください。',
@@ -99,7 +99,7 @@ const I18N = {
     guildScope: 'Server settings',
     userScope: 'User settings',
     noSettingsForScope: 'No settings are available for this scope.',
-    copy: 'Copy apply code',
+    copy: 'Copy apply command',
     importTitle: 'Import the Editor session manually',
     importDescription: 'Drop XecuteSession.xe4e from the Discord /editor response here, or choose the file.',
     dropZone: 'Drop XecuteSession.xe4e',
@@ -160,7 +160,7 @@ const I18N = {
     resetComplete: 'Settings were reset to the values from when the Editor was opened.',
     codeTooLarge: 'The setting code exceeds Discord\'s code input limit. Download the apply file instead.',
     clipboardFailed: 'Could not copy to the clipboard. Check the browser permission.',
-    copyComplete: 'Apply code copied. Paste it into the code option of /apply in Discord.',
+    copyComplete: 'Apply command copied. Paste it into Discord and press Enter.',
     fetchingSession: 'Loading the encrypted Editor session from Discord…',
     fetchFailed: 'The session could not be fetched from Discord CDN. Drop XecuteSession.xe4e from the /editor response below.',
     fetchExpired: 'The Discord attachment has expired or is no longer accessible. Run /editor again.',
@@ -508,7 +508,7 @@ function createInput(definition) {
       for (const entity of entities) {
         const option = document.createElement('option');
         option.value = entity.i;
-        option.textContent = `${entity.n} (${entity.i})`;
+        option.textContent = entity.t ? `[${entity.t}] ${entity.n} (${entity.i})` : `${entity.n} (${entity.i})`;
         input.append(option);
       }
       if (![...input.options].some(option => option.value === value)) {
@@ -893,11 +893,12 @@ document.getElementById('downloadButton').addEventListener('click', async () => 
 document.getElementById('copyButton').addEventListener('click', async () => {
   try {
     const code = await createApplyCode();
-    if (code.length > 6000) {
+    const command = `/apply code:${code}`;
+    if (command.length > 6600) {
       throw new Error(t('codeTooLarge'));
     }
     try {
-      await navigator.clipboard.writeText(code);
+      await navigator.clipboard.writeText(command);
     } catch (error) {
       throw new Error(t('clipboardFailed'));
     }
