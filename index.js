@@ -1,10 +1,9 @@
 'use strict';
 
 const THEME_STORAGE_KEY = 'xecute-editor-theme';
-const LANGUAGE_STORAGE_KEY = 'xecute-editor-language';
 const SESSION_LINK_PREFIX = 'XE4C.1';
 const SESSION_FILE_MAGIC = new TextEncoder().encode('XE4EA1');
-const MAX_SESSION_FILE_BYTES = 256 * 1024;
+const MAX_SESSION_FILE_BYTES = 1024 * 1024;
 const I18N = {
   ja: {
     serverSettings: 'サーバー設定',
@@ -180,6 +179,8 @@ const state = {
   authorization: '',
   signature: '',
   categories: {},
+  channels: [],
+  roles: [],
   definitions: [],
   original: {},
   values: {},
@@ -199,7 +200,6 @@ const settingsRoot = document.getElementById('settings');
 const navigationRoot = document.getElementById('navigation');
 const themeToggle = document.getElementById('themeToggle');
 const themeLabel = document.getElementById('themeLabel');
-const languageSelect = document.getElementById('languageSelect');
 const importPanel = document.getElementById('importPanel');
 const dropZone = document.getElementById('dropZone');
 const sessionFileInput = document.getElementById('sessionFileInput');
@@ -212,15 +212,6 @@ function t(key, values) {
     text = text.replaceAll(`{${name}}`, String(value));
   }
   return text;
-}
-
-function storedLanguage() {
-  try {
-    const stored = localStorage.getItem(LANGUAGE_STORAGE_KEY);
-    if (stored === 'ja' || stored === 'en') return stored;
-  } catch (error) {
-  }
-  return navigator.language && navigator.language.toLowerCase().startsWith('ja') ? 'ja' : 'en';
 }
 
 function storedTheme() {
@@ -247,11 +238,9 @@ function applyTheme(theme, persist) {
   }
 }
 
-function applyLanguage(language, persist) {
+function applyLanguage(language) {
   state.language = language === 'en' ? 'en' : 'ja';
   document.documentElement.lang = state.language;
-  languageSelect.value = state.language;
-  languageSelect.setAttribute('aria-label', t('languageAria'));
   navigationRoot.setAttribute('aria-label', t('navigation'));
   document.querySelectorAll('[data-i18n]').forEach(element => {
     element.textContent = t(element.dataset.i18n);
@@ -261,23 +250,10 @@ function applyLanguage(language, persist) {
   if (state.initialized) {
     render();
   }
-  if (persist) {
-    try {
-      localStorage.setItem(LANGUAGE_STORAGE_KEY, state.language);
-    } catch (error) {
-    }
-  }
-}
-
-function localizedText(localizations, fallback) {
-  if (!localizations || typeof localizations !== 'object') return fallback;
-  return localizations[state.language] || localizations[state.language.split('-')[0]] || fallback;
 }
 
 function definitionLabel(definition) {
-  if (definition.k === 'xross.language') return t('xrossLanguageLabel');
-  if (definition.k === 'xross.voice-volume') return t('xrossVoiceVolumeLabel');
-  return localizedText(definition.L, definition.l || definition.k);
+  return definition.l || definition.k;
 }
 
 function showMessage(text, type) {
@@ -511,7 +487,7 @@ function createInput(definition) {
     for (const choice of definition.c || []) {
       const option = document.createElement('option');
       option.value = choice.v;
-      option.textContent = localizedText(choice.L, choice.l);
+      option.textContent = choice.l;
       input.append(option);
     }
     input.value = value;
@@ -519,6 +495,34 @@ function createInput(definition) {
       state.values[definition.k] = input.value;
     });
     return input;
+  }
+
+  if (definition.t === 'CHANNEL' || definition.t === 'ROLE') {
+    const entities = definition.t === 'CHANNEL' ? state.channels : state.roles;
+    if (entities.length > 0) {
+      input = document.createElement('select');
+      const disabled = document.createElement('option');
+      disabled.value = '0';
+      disabled.textContent = definition.t === 'CHANNEL' ? t('channelPlaceholder') : t('rolePlaceholder');
+      input.append(disabled);
+      for (const entity of entities) {
+        const option = document.createElement('option');
+        option.value = entity.i;
+        option.textContent = `${entity.n} (${entity.i})`;
+        input.append(option);
+      }
+      if (![...input.options].some(option => option.value === value)) {
+        const unavailable = document.createElement('option');
+        unavailable.value = value;
+        unavailable.textContent = `${value} (unavailable)`;
+        input.append(unavailable);
+      }
+      input.value = value;
+      input.addEventListener('change', () => {
+        state.values[definition.k] = input.value;
+      });
+      return input;
+    }
   }
 
   input = document.createElement('input');
@@ -569,22 +573,7 @@ function groupedDefinitions() {
 }
 
 function settingDescription(definition) {
-  const knownDescriptions = {
-    'xross.language': 'xrossLanguageDescription',
-    'xross.voice-volume': 'xrossVoiceVolumeDescription',
-    'makhara.api-key': 'makharaApiKeyDescription',
-    'makhara.api-model': 'makharaApiModelDescription',
-    'makhara.history-limit': 'makharaHistoryLimitDescription',
-    'makhara.common-prompt': 'makharaCommonPromptDescription',
-    'makhara.active-profile': 'makharaActiveProfileDescription',
-    'makhara.allow-external-profiles': 'makharaExternalProfilesDescription',
-    'welcome-guild-plugin.text-enabled': 'welcomeTextEnabledDescription',
-    'welcome-guild-plugin.target-channel': 'welcomeTargetChannelDescription',
-    'welcome-guild-plugin.voice-enabled': 'welcomeVoiceEnabledDescription'
-  };
-  if (knownDescriptions[definition.k]) return t(knownDescriptions[definition.k]);
-  const localized = localizedText(definition.H, definition.h);
-  return localized || switchDescription(definition.t);
+  return definition.h || switchDescription(definition.t);
 }
 
 function switchDescription(type) {
@@ -796,10 +785,14 @@ async function initializeToken(token) {
   state.signature = parts[3];
   state.categories = payload.c || {};
   state.definitions = payload.d;
+  state.channels = Array.isArray(payload.ch) ? payload.ch : [];
+  state.roles = Array.isArray(payload.r) ? payload.r : [];
   state.original = structuredClone(payload.v);
   state.values = structuredClone(payload.v);
   state.expiresAt = authorization.e;
   state.initialized = true;
+
+  applyLanguage(payload.i);
 
   const guildName = payload.n || 'Discord Server';
   document.getElementById('guildName').textContent = guildName;
@@ -871,10 +864,6 @@ async function createApplyCode(changes) {
 themeToggle.addEventListener('click', () => {
   const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
   applyTheme(next, true);
-});
-
-languageSelect.addEventListener('change', () => {
-  applyLanguage(languageSelect.value, true);
 });
 
 document.getElementById('resetButton').addEventListener('click', () => {
@@ -957,7 +946,6 @@ dropZone.addEventListener('drop', event => {
   if (file) importSelectedFile(file);
 });
 
-state.language = storedLanguage();
 applyTheme(storedTheme(), false);
-applyLanguage(state.language, false);
+applyLanguage('ja');
 initialize();
