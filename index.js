@@ -4,7 +4,7 @@ const THEME_STORAGE_KEY = 'xecute-editor-theme';
 const LANGUAGE_STORAGE_KEY = 'xecute-editor-language';
 const SESSION_LINK_PREFIX = 'XE4C.1';
 const SESSION_FILE_MAGIC = new TextEncoder().encode('XE4EA1');
-const MAX_SESSION_FILE_BYTES = 64 * 1024;
+const MAX_SESSION_FILE_BYTES = 256 * 1024;
 const I18N = {
   ja: {
     serverSettings: 'サーバー設定',
@@ -342,6 +342,7 @@ async function decryptSessionFile(bytes) {
   if (!(bytes instanceof Uint8Array) || bytes.length > MAX_SESSION_FILE_BYTES) {
     throw new Error(t('sessionFileTooLarge'));
   }
+  bytes = await extractSessionBytes(bytes);
   if (bytes.length < SESSION_FILE_MAGIC.length + 12 + 16) {
     throw new Error(t('invalidSessionFile'));
   }
@@ -368,6 +369,36 @@ async function decryptSessionFile(bytes) {
       throw error;
     }
     throw new Error(t('decryptFailed'));
+  }
+}
+
+async function extractSessionBytes(bytes) {
+  if (bytes.length >= SESSION_FILE_MAGIC.length && SESSION_FILE_MAGIC.every((value, index) => bytes[index] === value)) {
+    return bytes;
+  }
+  if (!bytes.length || !window.createImageBitmap || !window.OffscreenCanvas) {
+    throw new Error(t('invalidSessionFile'));
+  }
+  try {
+    const image = await createImageBitmap(new Blob([bytes], { type: 'image/png' }));
+    const canvas = new OffscreenCanvas(image.width, image.height);
+    const context = canvas.getContext('2d', { willReadFrequently: true });
+    context.drawImage(image, 0, 0);
+    image.close();
+    const rgba = context.getImageData(0, 0, canvas.width, canvas.height).data;
+    const packed = new Uint8Array(canvas.width * canvas.height * 3);
+    for (let pixel = 0; pixel < canvas.width * canvas.height; pixel++) {
+      packed[pixel * 3] = rgba[pixel * 4];
+      packed[pixel * 3 + 1] = rgba[pixel * 4 + 1];
+      packed[pixel * 3 + 2] = rgba[pixel * 4 + 2];
+    }
+    const length = new DataView(packed.buffer).getUint32(0);
+    if (length < SESSION_FILE_MAGIC.length + 12 + 16 || length > MAX_SESSION_FILE_BYTES || length > packed.length - 4) {
+      throw new Error(t('invalidSessionFile'));
+    }
+    return packed.slice(4, 4 + length);
+  } catch (error) {
+    throw new Error(t('invalidSessionFile'));
   }
 }
 
