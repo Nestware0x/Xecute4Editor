@@ -17,6 +17,7 @@ const I18N = {
     reset: '元に戻す',
     dragApply: '掴んでDiscordへ',
     dragHint: 'Discordの入力欄へドロップ',
+    dragHintChanges: '{count}件の変更をDiscordへドロップ',
     copy: '適用コードをコピー',
     importTitle: 'Editorセッションを手動で読み込む',
     importDescription: 'Discordの /editor 応答に添付されたXecuteSession.xe4eをここへドロップするか、ファイルを選択してください。',
@@ -100,6 +101,7 @@ const I18N = {
     reset: 'Reset',
     dragApply: 'Drag to Discord',
     dragHint: 'Drop into the Discord message box',
+    dragHintChanges: '{count} changed settings • Drop into Discord',
     copy: 'Copy apply code',
     importTitle: 'Import the Editor session manually',
     importDescription: 'Drop XecuteSession.xe4e from the Discord /editor response here, or choose the file.',
@@ -259,7 +261,10 @@ function applyLanguage(language, persist) {
   });
   applyTheme(document.documentElement.dataset.theme || storedTheme(), false);
   updateExpiry();
-  if (state.initialized) render();
+  if (state.initialized) {
+    render();
+    prepareDragApply();
+  }
   if (persist) {
     try {
       localStorage.setItem(LANGUAGE_STORAGE_KEY, state.language);
@@ -783,9 +788,21 @@ async function initialize() {
   }
 }
 
-async function createApplyCode() {
-  for (const definition of state.definitions) validateDefinition(definition, state.values[definition.k]);
-  const payload = await compressJson({ v: state.values });
+function collectChangedValues() {
+  const changes = {};
+  for (const definition of state.definitions) {
+    const value = state.values[definition.k];
+    validateDefinition(definition, value);
+    if (!Object.is(value, state.original[definition.k])) {
+      changes[definition.k] = value;
+    }
+  }
+  return changes;
+}
+
+async function createApplyCode(changes) {
+  const changedValues = changes || collectChangedValues();
+  const payload = await compressJson({ v: changedValues });
   return `XE4.1.${state.authorization}.${state.signature}.${payload}`;
 }
 
@@ -793,13 +810,17 @@ async function prepareDragApply() {
   if (!state.initialized) return;
   const preparation = ++dragPreparation;
   try {
-    const code = await createApplyCode();
+    const changes = collectChangedValues();
+    const code = await createApplyCode(changes);
     if (preparation !== dragPreparation) return;
     const nextUrl = URL.createObjectURL(new Blob([code], { type: 'application/octet-stream' }));
     if (dragApplyUrl) URL.revokeObjectURL(dragApplyUrl);
     dragApplyCode = code;
     dragApplyUrl = nextUrl;
     dragApply.classList.add('ready');
+    document.getElementById('dragApplyHint').textContent = t('dragHintChanges', {
+      count: Object.keys(changes).length
+    });
   } catch (error) {
     dragApply.classList.remove('ready');
   }
