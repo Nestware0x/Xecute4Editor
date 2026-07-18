@@ -37,6 +37,8 @@ const I18N = {
     expiry: '有効期限: {date}',
     channelPlaceholder: 'DiscordチャンネルID、または0',
     rolePlaceholder: 'DiscordロールID、または0',
+    notSelected: '選択しない',
+    unavailableSelection: '現在は利用できない選択肢',
     descriptionBoolean: 'この機能の有効・無効を切り替えます。',
     descriptionInteger: 'この設定で使用する数値を指定します。',
     descriptionSelect: '利用する値を一覧から選択します。',
@@ -121,6 +123,8 @@ const I18N = {
     expiry: 'Expires: {date}',
     channelPlaceholder: 'Discord channel ID, or 0',
     rolePlaceholder: 'Discord role ID, or 0',
+    notSelected: 'Do not select',
+    unavailableSelection: 'Currently unavailable selection',
     descriptionBoolean: 'Enable or disable this feature.',
     descriptionInteger: 'Enter the number used by this setting.',
     descriptionSelect: 'Choose a value from the list.',
@@ -460,6 +464,10 @@ function validateDefinition(definition, value) {
   if ((definition.t === 'CHANNEL' || definition.t === 'ROLE') && !/^(0|[1-9][0-9]{5,24})$/.test(value)) {
     throw new Error(t('discordIdRequired', { label }));
   }
+  if ((definition.t === 'CHANNEL_LIST' || definition.t === 'ROLE_LIST')
+      && (typeof value !== 'string' || !value.split(',').every(id => id.trim() === '' || /^[1-9][0-9]{5,24}(?::(?:true|false))?$/.test(id.trim())))) {
+    throw new Error(t('discordIdRequired', { label }));
+  }
 }
 
 function createInput(definition) {
@@ -497,24 +505,61 @@ function createInput(definition) {
     return input;
   }
 
-  if (definition.t === 'CHANNEL' || definition.t === 'ROLE') {
-    const entities = definition.t === 'CHANNEL' ? state.channels : state.roles;
+  if (definition.t === 'CHANNEL' || definition.t === 'ROLE' || definition.t === 'CHANNEL_LIST' || definition.t === 'ROLE_LIST') {
+    const isList = definition.t === 'CHANNEL_LIST' || definition.t === 'ROLE_LIST';
+    const isChannel = definition.t === 'CHANNEL' || definition.t === 'CHANNEL_LIST';
+    const allEntities = isChannel ? state.channels : state.roles;
+    const entities = isChannel && Array.isArray(definition.a) && definition.a.length > 0
+      ? allEntities.filter(entity => definition.a.includes(entity.t))
+      : allEntities;
     if (entities.length > 0) {
+      const selectedValues = isList ? String(value).split(',').map(item => item.trim().split(':', 1)[0]).filter(Boolean) : [value];
+      const saveListSelection = selected => {
+        const existingDetails = new Map(String(state.values[definition.k]).split(',').map(item => {
+          const [id, detailed] = item.trim().split(':', 2);
+          return [id, detailed === 'true'];
+        }));
+        state.values[definition.k] = selected.map(id => {
+          if (definition.t !== 'CHANNEL_LIST') return id;
+          return `${id}:${existingDetails.get(id) === true}`;
+        }).join(',');
+      };
+      if (isList) {
+        const list = document.createElement('div');
+        list.className = 'entity-multi-select';
+        for (const entity of entities) {
+          const option = document.createElement('label');
+          option.className = 'entity-multi-option';
+          const checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.value = entity.i;
+          checkbox.checked = selectedValues.includes(entity.i);
+          const name = document.createElement('span');
+          name.textContent = entity.n;
+          checkbox.addEventListener('change', () => {
+            saveListSelection([...list.querySelectorAll('input:checked')].map(selected => selected.value));
+          });
+          option.append(checkbox, name);
+          list.append(option);
+        }
+        return list;
+      }
+
       input = document.createElement('select');
       const disabled = document.createElement('option');
       disabled.value = '0';
-      disabled.textContent = definition.t === 'CHANNEL' ? t('channelPlaceholder') : t('rolePlaceholder');
+      disabled.textContent = t('notSelected');
       input.append(disabled);
       for (const entity of entities) {
         const option = document.createElement('option');
         option.value = entity.i;
-        option.textContent = entity.t ? `[${entity.t}] ${entity.n} (${entity.i})` : `${entity.n} (${entity.i})`;
+        option.textContent = entity.n;
         input.append(option);
       }
       if (![...input.options].some(option => option.value === value)) {
         const unavailable = document.createElement('option');
         unavailable.value = value;
-        unavailable.textContent = `${value} (unavailable)`;
+        unavailable.textContent = t('unavailableSelection');
         input.append(unavailable);
       }
       input.value = value;
