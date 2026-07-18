@@ -7,17 +7,16 @@ const SESSION_FILE_MAGIC = new TextEncoder().encode('XE4EA1');
 const MAX_SESSION_FILE_BYTES = 64 * 1024;
 const I18N = {
   ja: {
-    brandStatus: 'Discord添付連携の静的エディター',
-    localProcessing: 'ローカル処理',
     serverSettings: 'サーバー設定',
     xecuteSettings: 'Xecute 設定',
     serverConfiguration: 'サーバー設定',
     heroCopy: 'Xross Engineと各プラグインが公開している設定を、このページからまとめて編集できます。',
-    actionNote: '設定はこのブラウザー内だけで処理されます。',
     reset: '元に戻す',
-    dragApply: '掴んでDiscordへ',
-    dragHint: 'Discordの入力欄へドロップ',
-    dragHintChanges: '{count}件の変更をDiscordへドロップ',
+    download: '適用ファイルをダウンロード',
+    guildScope: 'サーバー設定',
+    userScope: 'ユーザー設定',
+    settingsScope: '設定対象',
+    noSettingsForScope: 'この対象で利用できる設定はありません。',
     copy: '適用コードをコピー',
     importTitle: 'Editorセッションを手動で読み込む',
     importDescription: 'Discordの /editor 応答に添付されたXecuteSession.xe4eをここへドロップするか、ファイルを選択してください。',
@@ -77,7 +76,7 @@ const I18N = {
     invalidSelection: '{label}: 選択値が不正です。',
     discordIdRequired: '{label}: Discord IDまたは0を入力してください。',
     resetComplete: '設定をEditorを開いた時点の値へ戻しました。',
-    codeTooLarge: '設定コードがDiscordのcode入力上限を超えました。「掴んでDiscordへ」を使用してください。',
+    codeTooLarge: '設定コードがDiscordのcode入力上限を超えました。適用ファイルをダウンロードしてください。',
     clipboardFailed: 'クリップボードへコピーできませんでした。ブラウザーの権限を確認してください。',
     copyComplete: '適用コードをコピーしました。Discordで /apply の code に貼り付けてください。',
     fetchingSession: 'Discordから暗号化されたEditorセッションを読み込んでいます…',
@@ -91,17 +90,16 @@ const I18N = {
     downloadComplete: 'XecuteApply.xe4aを保存しました。Discordで /apply の file に指定してください。'
   },
   en: {
-    brandStatus: 'Static editor backed by Discord attachments',
-    localProcessing: 'Local only',
     serverSettings: 'Server settings',
     xecuteSettings: 'Xecute settings',
     serverConfiguration: 'Server configuration',
     heroCopy: 'Edit settings published by Xross Engine and its plugins together on this page.',
-    actionNote: 'Settings are processed only in this browser.',
     reset: 'Reset',
-    dragApply: 'Drag to Discord',
-    dragHint: 'Drop into the Discord message box',
-    dragHintChanges: '{count} changed settings • Drop into Discord',
+    download: 'Download apply file',
+    guildScope: 'Server settings',
+    userScope: 'User settings',
+    settingsScope: 'Settings scope',
+    noSettingsForScope: 'No settings are available for this scope.',
     copy: 'Copy apply code',
     importTitle: 'Import the Editor session manually',
     importDescription: 'Drop XecuteSession.xe4e from the Discord /editor response here, or choose the file.',
@@ -161,7 +159,7 @@ const I18N = {
     invalidSelection: '{label}: the selected value is invalid.',
     discordIdRequired: '{label}: enter a Discord ID or 0.',
     resetComplete: 'Settings were reset to the values from when the Editor was opened.',
-    codeTooLarge: 'The setting code exceeds Discord\'s code input limit. Use Drag to Discord instead.',
+    codeTooLarge: 'The setting code exceeds Discord\'s code input limit. Download the apply file instead.',
     clipboardFailed: 'Could not copy to the clipboard. Check the browser permission.',
     copyComplete: 'Apply code copied. Paste it into the code option of /apply in Discord.',
     fetchingSession: 'Loading the encrypted Editor session from Discord…',
@@ -185,6 +183,7 @@ const state = {
   values: {},
   collapsedOwners: new Set(),
   language: 'ja',
+  scope: 'GUILD',
   expiresAt: 0,
   transportKey: '',
   attachmentUrl: '',
@@ -202,11 +201,8 @@ const languageSelect = document.getElementById('languageSelect');
 const importPanel = document.getElementById('importPanel');
 const dropZone = document.getElementById('dropZone');
 const sessionFileInput = document.getElementById('sessionFileInput');
-const dragApply = document.getElementById('dragApply');
+const scopeSwitch = document.querySelector('.scope-switch');
 let navigationObserver;
-let dragApplyUrl = '';
-let dragApplyCode = '';
-let dragPreparation = 0;
 
 function t(key, values) {
   const dictionary = I18N[state.language] || I18N.ja;
@@ -255,6 +251,7 @@ function applyLanguage(language, persist) {
   document.documentElement.lang = state.language;
   languageSelect.value = state.language;
   languageSelect.setAttribute('aria-label', t('languageAria'));
+  scopeSwitch.setAttribute('aria-label', t('settingsScope'));
   navigationRoot.setAttribute('aria-label', t('navigation'));
   document.querySelectorAll('[data-i18n]').forEach(element => {
     element.textContent = t(element.dataset.i18n);
@@ -263,7 +260,6 @@ function applyLanguage(language, persist) {
   updateExpiry();
   if (state.initialized) {
     render();
-    prepareDragApply();
   }
   if (persist) {
     try {
@@ -508,6 +504,7 @@ function elementId(prefix, value) {
 function groupedDefinitions() {
   const groups = new Map();
   for (const definition of state.definitions) {
+    if ((definition.s || 'GUILD') !== state.scope) continue;
     const owner = ownerFor(definition);
     if (!groups.has(owner)) groups.set(owner, []);
     groups.get(owner).push(definition);
@@ -696,12 +693,29 @@ function render() {
   navigationRoot.replaceChildren();
   createNavigationBase();
 
-  for (const [owner, definitions] of groupedDefinitions()) {
+  const groups = groupedDefinitions();
+  for (const [owner, definitions] of groups) {
     const name = categoryName(owner);
     const categoryId = elementId('category', owner);
     navigationRoot.append(createNavigationGroup(owner, definitions, name, categoryId));
     settingsRoot.append(createCategory(owner, definitions, name, categoryId));
   }
+
+  if (groups.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'scope-empty';
+    empty.textContent = t('noSettingsForScope');
+    settingsRoot.append(empty);
+  }
+
+  const guildScope = state.scope === 'GUILD';
+  document.getElementById('scopeEyebrow').textContent = t(guildScope ? 'serverConfiguration' : 'userScope');
+  document.getElementById('sidebarScopeLabel').textContent = t(guildScope ? 'serverSettings' : 'userScope');
+  document.querySelectorAll('.scope-button').forEach(button => {
+    const active = button.dataset.scope === state.scope;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-selected', String(active));
+  });
 
   editor.classList.remove('hidden');
   actions.classList.remove('hidden');
@@ -746,7 +760,6 @@ async function initializeToken(token) {
   hideMessage();
   updateExpiry();
   render();
-  prepareDragApply();
 }
 
 async function loadSessionFile(file, manual) {
@@ -806,37 +819,6 @@ async function createApplyCode(changes) {
   return `XE4.1.${state.authorization}.${state.signature}.${payload}`;
 }
 
-async function prepareDragApply() {
-  if (!state.initialized) return;
-  const preparation = ++dragPreparation;
-  try {
-    const changes = collectChangedValues();
-    const code = await createApplyCode(changes);
-    if (preparation !== dragPreparation) return;
-    const nextUrl = URL.createObjectURL(new Blob([code], { type: 'application/octet-stream' }));
-    if (dragApplyUrl) URL.revokeObjectURL(dragApplyUrl);
-    dragApplyCode = code;
-    dragApplyUrl = nextUrl;
-    dragApply.classList.add('ready');
-    document.getElementById('dragApplyHint').textContent = t('dragHintChanges', {
-      count: Object.keys(changes).length
-    });
-  } catch (error) {
-    dragApply.classList.remove('ready');
-  }
-}
-
-function downloadApplyFallback() {
-  if (!dragApplyUrl) return;
-  const link = document.createElement('a');
-  link.href = dragApplyUrl;
-  link.download = 'XecuteApply.xe4a';
-  document.body.append(link);
-  link.click();
-  link.remove();
-  showMessage(t('downloadComplete'), 'success');
-}
-
 themeToggle.addEventListener('click', () => {
   const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
   applyTheme(next, true);
@@ -849,33 +831,31 @@ languageSelect.addEventListener('change', () => {
 document.getElementById('resetButton').addEventListener('click', () => {
   state.values = structuredClone(state.original);
   render();
-  prepareDragApply();
   showMessage(t('resetComplete'), '');
 });
 
-dragApply.addEventListener('pointerenter', prepareDragApply);
-dragApply.addEventListener('pointerdown', prepareDragApply);
-dragApply.addEventListener('dragstart', event => {
-  if (!dragApplyUrl || !dragApplyCode) {
-    event.preventDefault();
-    prepareDragApply();
-    return;
-  }
-  event.dataTransfer.effectAllowed = 'copy';
-  event.dataTransfer.setData(
-    'DownloadURL',
-    `application/octet-stream:XecuteApply.xe4a:data:application/octet-stream;base64,${btoa(dragApplyCode)}`
-  );
-  dragApply.classList.add('dragging');
-});
-dragApply.addEventListener('dragend', () => dragApply.classList.remove('dragging'));
-dragApply.addEventListener('click', downloadApplyFallback);
-dragApply.addEventListener('keydown', event => {
-  if (event.key === 'Enter' || event.key === ' ') {
-    event.preventDefault();
-    downloadApplyFallback();
+document.getElementById('downloadButton').addEventListener('click', async () => {
+  try {
+    const code = await createApplyCode();
+    const url = URL.createObjectURL(new Blob([code], { type: 'application/octet-stream' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'XecuteApply.xe4a';
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    showMessage(t('downloadComplete'), 'success');
+  } catch (error) {
+    showMessage(error.message || String(error), 'error');
   }
 });
+
+document.querySelectorAll('.scope-button').forEach(button => button.addEventListener('click', () => {
+  state.scope = button.dataset.scope === 'USER' ? 'USER' : 'GUILD';
+  render();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}));
 
 document.getElementById('copyButton').addEventListener('click', async () => {
   try {
