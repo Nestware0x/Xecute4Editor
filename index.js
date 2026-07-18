@@ -80,6 +80,8 @@ const I18N = {
     copyComplete: '適用コードをコピーしました。Discordで /apply の code に貼り付けてください。',
     fetchingSession: 'Discordから暗号化されたEditorセッションを読み込んでいます…',
     fetchFailed: 'Discord CDNからセッションを自動取得できませんでした。/editor 応答のXecuteSession.xe4eを下へドロップしてください。',
+    fetchExpired: 'Discord添付の有効期限が切れたか、アクセスできません。/editor をもう一度実行してください。',
+    fetchBlocked: 'Discord CDNへの自動アクセスがブラウザーまたはネットワークで拒否されました。/editor 応答のXecuteSession.xe4eを下へドロップしてください。',
     missingSessionKey: '復号鍵がありません。Discordの /editor 応答にあるEditorリンクをもう一度開いてください。',
     invalidSessionFile: 'XecuteSession.xe4eの形式が正しくありません。',
     sessionFileTooLarge: 'Editorセッションファイルが大きすぎます。',
@@ -162,6 +164,8 @@ const I18N = {
     copyComplete: 'Apply code copied. Paste it into the code option of /apply in Discord.',
     fetchingSession: 'Loading the encrypted Editor session from Discord…',
     fetchFailed: 'The session could not be fetched from Discord CDN. Drop XecuteSession.xe4e from the /editor response below.',
+    fetchExpired: 'The Discord attachment has expired or is no longer accessible. Run /editor again.',
+    fetchBlocked: 'The browser or network blocked automatic access to Discord CDN. Drop XecuteSession.xe4e from the /editor response below.',
     missingSessionKey: 'The decryption key is missing. Open the Editor link from the Discord /editor response again.',
     invalidSessionFile: 'This is not a valid XecuteSession.xe4e file.',
     sessionFileTooLarge: 'The Editor session file is too large.',
@@ -371,14 +375,36 @@ async function fetchSessionToken() {
   if (!isDiscordAttachmentUrl(state.attachmentUrl)) {
     throw new Error(t('invalidLink'));
   }
-  const response = await fetch(state.attachmentUrl, {
-    cache: 'no-store',
-    credentials: 'omit',
-    referrerPolicy: 'no-referrer'
-  });
-  if (!response.ok) throw new Error(t('fetchFailed'));
-  const bytes = new Uint8Array(await response.arrayBuffer());
-  return decryptSessionFile(bytes);
+  const urls = [state.attachmentUrl];
+  const mediaUrl = new URL(state.attachmentUrl);
+  if (mediaUrl.hostname === 'cdn.discordapp.com') {
+    mediaUrl.hostname = 'media.discordapp.net';
+    urls.push(mediaUrl.toString());
+  } else if (mediaUrl.hostname === 'media.discordapp.net') {
+    mediaUrl.hostname = 'cdn.discordapp.com';
+    urls.push(mediaUrl.toString());
+  }
+  let lastError;
+  for (const url of urls) {
+    try {
+      const response = await fetch(url, {
+        cache: 'no-store',
+        credentials: 'omit',
+        referrerPolicy: 'no-referrer'
+      });
+      if (response.ok) {
+        return decryptSessionFile(new Uint8Array(await response.arrayBuffer()));
+      }
+      if (response.status === 401 || response.status === 403 || response.status === 404) {
+        lastError = new Error(t('fetchExpired'));
+      } else {
+        lastError = new Error(t('fetchFailed'));
+      }
+    } catch (error) {
+      lastError = new Error(t('fetchBlocked'));
+    }
+  }
+  throw lastError || new Error(t('fetchFailed'));
 }
 
 async function decompressJson(encoded) {
@@ -776,7 +802,7 @@ async function initialize() {
         await initializeToken(await fetchSessionToken());
       } catch (error) {
         showImportPanel();
-        showMessage(t('fetchFailed'), 'error');
+        showMessage(error.message || t('fetchFailed'), 'error');
       }
       return;
     }
