@@ -357,7 +357,7 @@ html[data-theme="dark"] .theme-icon-dark { display: inline; }
 .setting-title { margin-bottom: 5px; color: var(--text); font-size: 14px; font-weight: 720; }
 .setting-description { max-width: 760px; color: var(--muted); font-size: 12px; line-height: 1.55; }
 .setting-key { margin-top: 5px; color: var(--faint); font: 10px ui-monospace, SFMono-Regular, Consolas, monospace; }
-.setting > input, .setting > select, .setting > .switch, .setting > .entity-multi-select { margin-top: 12px; }
+.setting > input, .setting > select, .setting > .switch, .setting > .entity-multi-combo { margin-top: 12px; }
 input[type="text"], input[type="number"], select {
   width: 100%;
   min-height: 42px;
@@ -385,6 +385,35 @@ input:focus, select:focus { border-color: var(--accent); background: var(--surfa
   cursor: pointer;
 }
 .switch input { width: 18px; height: 18px; accent-color: var(--accent); }
+.entity-multi-combo { width: 100%; }
+.entity-multi-toggle {
+  position: relative;
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 38px 9px 11px;
+  overflow: hidden;
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--surface-soft) 84%, transparent);
+  color: var(--text);
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.entity-multi-toggle::after { content: '⌄'; position: absolute; right: 13px; color: var(--muted); }
+.entity-multi-combo { position: relative; }
+.entity-multi-panel {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 6px);
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.entity-multi-panel.hidden { display: none; }
 .entity-multi-select {
   width: 100%;
   max-height: 232px;
@@ -406,6 +435,7 @@ input:focus, select:focus { border-color: var(--accent); background: var(--surfa
 .entity-multi-option + .entity-multi-option { border-top: 1px solid var(--border); }
 .entity-multi-option:hover { background: color-mix(in srgb, var(--accent) 9%, transparent); }
 .entity-multi-option input { width: 16px; height: 16px; accent-color: var(--accent); }
+.entity-multi-done { width: 100%; margin-top: 8px; }
 
 .actions {
   position: fixed;

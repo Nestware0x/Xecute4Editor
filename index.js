@@ -39,6 +39,7 @@ const I18N = {
     rolePlaceholder: 'DiscordロールID、または0',
     notSelected: '選択しない',
     unavailableSelection: '現在は利用できない選択肢',
+    multiSelectDone: '完了',
     descriptionBoolean: 'この機能の有効・無効を切り替えます。',
     descriptionInteger: 'この設定で使用する数値を指定します。',
     descriptionSelect: '利用する値を一覧から選択します。',
@@ -125,6 +126,7 @@ const I18N = {
     rolePlaceholder: 'Discord role ID, or 0',
     notSelected: 'Do not select',
     unavailableSelection: 'Currently unavailable selection',
+    multiSelectDone: 'Done',
     descriptionBoolean: 'Enable or disable this feature.',
     descriptionInteger: 'Enter the number used by this setting.',
     descriptionSelect: 'Choose a value from the list.',
@@ -525,8 +527,22 @@ function createInput(definition) {
         }).join(',');
       };
       if (isList) {
+        const combo = document.createElement('div');
+        combo.className = 'entity-multi-combo';
+        const toggle = document.createElement('button');
+        toggle.className = 'entity-multi-toggle';
+        toggle.type = 'button';
+        const panel = document.createElement('div');
+        panel.className = 'entity-multi-panel hidden';
         const list = document.createElement('div');
         list.className = 'entity-multi-select';
+        const selectedNames = () => entities
+          .filter(entity => [...list.querySelectorAll('input:checked')].some(input => input.value === entity.i))
+          .map(entity => entity.n);
+        const updateSummary = () => {
+          const names = selectedNames();
+          toggle.textContent = names.length === 0 ? t('notSelected') : names.join(', ');
+        };
         for (const entity of entities) {
           const option = document.createElement('label');
           option.className = 'entity-multi-option';
@@ -538,11 +554,29 @@ function createInput(definition) {
           name.textContent = entity.n;
           checkbox.addEventListener('change', () => {
             saveListSelection([...list.querySelectorAll('input:checked')].map(selected => selected.value));
+            updateSummary();
           });
           option.append(checkbox, name);
           list.append(option);
         }
-        return list;
+        const done = document.createElement('button');
+        done.className = 'entity-multi-done';
+        done.type = 'button';
+        done.textContent = t('multiSelectDone');
+        toggle.addEventListener('click', () => {
+          panel.classList.toggle('hidden');
+          toggle.setAttribute('aria-expanded', String(!panel.classList.contains('hidden')));
+        });
+        done.addEventListener('click', () => {
+          panel.classList.add('hidden');
+          toggle.setAttribute('aria-expanded', 'false');
+          toggle.focus();
+        });
+        panel.append(list, done);
+        combo.append(toggle, panel);
+        toggle.setAttribute('aria-expanded', 'false');
+        updateSummary();
+        return combo;
       }
 
       input = document.createElement('select');
