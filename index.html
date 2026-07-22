@@ -51,6 +51,10 @@
       </aside>
 
       <div class="content">
+        <nav class="editor-tabs" aria-label="Editor tools">
+          <button id="settingsTab" class="editor-tab active" type="button">Settings</button>
+          <button id="serverBuilderTab" class="editor-tab" type="button">ServerBuilder</button>
+        </nav>
         <header id="pageTop" class="hero">
           <div id="scopeEyebrow" class="eyebrow" data-i18n="serverConfiguration">サーバー設定</div>
           <h2 id="guildName">Discord Server</h2>
@@ -58,6 +62,11 @@
           <div id="expiry" class="expiry-badge"></div>
         </header>
         <div id="settings" class="settings"></div>
+        <section id="serverBuilderPanel" class="server-builder-panel hidden">
+          <h2>ServerBuilder</h2>
+          <p>Paste a <code>server-builder/v1</code> JSON plan. Copy or download creates a one-time <code>/server-builder apply</code> code; it does not change normal Editor settings.</p>
+          <textarea id="serverBuilderJson" rows="20" spellcheck="false" placeholder='{"schemaVersion":"server-builder/v1","roles":[],"categories":[]}'></textarea>
+        </section>
       </div>
     </section>
   </main>

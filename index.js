@@ -196,6 +196,7 @@ const state = {
   expiresAt: 0,
   transportKey: '',
   attachmentUrl: '',
+  activeTab: 'settings',
   initialized: false
 };
 
@@ -209,6 +210,10 @@ const themeLabel = document.getElementById('themeLabel');
 const importPanel = document.getElementById('importPanel');
 const dropZone = document.getElementById('dropZone');
 const sessionFileInput = document.getElementById('sessionFileInput');
+const settingsTab = document.getElementById('settingsTab');
+const serverBuilderTab = document.getElementById('serverBuilderTab');
+const serverBuilderPanel = document.getElementById('serverBuilderPanel');
+const serverBuilderJson = document.getElementById('serverBuilderJson');
 let navigationObserver;
 
 function t(key, values) {
@@ -604,8 +609,10 @@ function createInput(definition) {
     }
   }
 
-  input = document.createElement('input');
-  input.type = definition.t === 'INTEGER' ? 'number' : 'text';
+  const useTextArea = definition.t === 'STRING' && definition.x != null && definition.x > 500;
+  input = document.createElement(useTextArea ? 'textarea' : 'input');
+  if (useTextArea) input.rows = 14;
+  if (!useTextArea) input.type = definition.t === 'INTEGER' ? 'number' : 'text';
   input.value = value;
   if (definition.t === 'CHANNEL' || definition.t === 'ROLE') {
     input.inputMode = 'numeric';
@@ -834,6 +841,16 @@ function render() {
 
   editor.classList.remove('hidden');
   actions.classList.remove('hidden');
+  const builder = state.activeTab === 'server-builder' && state.scope === 'GUILD';
+  settingsRoot.classList.toggle('hidden', builder);
+  document.getElementById('pageTop').classList.toggle('hidden', builder);
+  serverBuilderPanel.classList.toggle('hidden', !builder);
+  settingsTab.classList.toggle('active', !builder);
+  serverBuilderTab.classList.toggle('active', builder);
+  serverBuilderTab.classList.toggle('hidden', state.scope !== 'GUILD');
+  document.getElementById('resetButton').textContent = builder ? 'JSONを消去' : t('reset');
+  document.getElementById('downloadButton').textContent = builder ? 'ServerBuilderファイルをダウンロード' : t('download');
+  document.getElementById('copyButton').textContent = builder ? 'ServerBuilderコマンドをコピー' : t('copy');
   activateNavigation();
 }
 
@@ -940,12 +957,41 @@ async function createApplyCode(changes) {
   return `XE4.1.${state.authorization}.${state.signature}.${payload}`;
 }
 
+async function createServerBuilderCode() {
+  let plan;
+  try {
+    plan = JSON.parse(serverBuilderJson.value);
+  } catch (error) {
+    throw new Error('ServerBuilder JSONの形式が正しくありません。');
+  }
+  if (!plan || plan.schemaVersion !== 'server-builder/v1') {
+    throw new Error('schemaVersion は server-builder/v1 にしてください。');
+  }
+  const payload = await compressJson({ v: { 'server-builder.plan': plan } });
+  return `XE4.1.${state.authorization}.${state.signature}.${payload}`;
+}
+
+function useServerBuilderTab() {
+  if (state.scope !== 'GUILD') return;
+  state.activeTab = 'server-builder';
+  render();
+}
+
+function useSettingsTab() {
+  state.activeTab = 'settings';
+  render();
+}
+
 themeToggle.addEventListener('click', () => {
   const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
   applyTheme(next, true);
 });
 
 document.getElementById('resetButton').addEventListener('click', () => {
+  if (state.activeTab === 'server-builder') {
+    serverBuilderJson.value = '';
+    return;
+  }
   state.values = structuredClone(state.original);
   render();
   showMessage(t('resetComplete'), '');
@@ -953,11 +999,12 @@ document.getElementById('resetButton').addEventListener('click', () => {
 
 document.getElementById('downloadButton').addEventListener('click', async () => {
   try {
-    const code = await createApplyCode();
+    const builder = state.activeTab === 'server-builder';
+    const code = builder ? await createServerBuilderCode() : await createApplyCode();
     const url = URL.createObjectURL(new Blob([code], { type: 'application/octet-stream' }));
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'XecuteApply.xe4a';
+    link.download = builder ? 'ServerBuilder.xe4sb' : 'XecuteApply.xe4a';
     document.body.append(link);
     link.click();
     link.remove();
@@ -971,8 +1018,9 @@ document.getElementById('downloadButton').addEventListener('click', async () => 
 
 document.getElementById('copyButton').addEventListener('click', async () => {
   try {
-    const code = await createApplyCode();
-    const command = `/apply code:${code}`;
+    const builder = state.activeTab === 'server-builder';
+    const code = builder ? await createServerBuilderCode() : await createApplyCode();
+    const command = builder ? `/server-builder apply code:${code}` : `/apply code:${code}`;
     if (command.length > 6600) {
       throw new Error(t('codeTooLarge'));
     }
@@ -986,6 +1034,9 @@ document.getElementById('copyButton').addEventListener('click', async () => {
     showMessage(error.message || String(error), 'error');
   }
 });
+
+settingsTab.addEventListener('click', useSettingsTab);
+serverBuilderTab.addEventListener('click', useServerBuilderTab);
 
 async function importSelectedFile(file) {
   try {
