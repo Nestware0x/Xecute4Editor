@@ -109,6 +109,9 @@ h1, h2, h3, p { margin-top: 0; }
 .server-builder-panel textarea { width: 100%; min-height: 360px; padding: 12px; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--surface-soft); color: var(--text); font: 13px ui-monospace, SFMono-Regular, Consolas, monospace; resize: vertical; }
 .server-builder-guide { margin-top: 28px; padding-top: 22px; border-top: 1px solid var(--border); }
 .server-builder-guide a { display: block; width: fit-content; margin-top: 10px; color: var(--accent-text); font-weight: 700; }
+.guide-url { display: block; margin: 12px 0; padding: 10px; overflow-wrap: anywhere; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-soft); color: var(--text); }
+.server-builder-guide .button-row { justify-content: flex-start; }
+.server-builder-guide .button-row a { display: inline-flex; align-items: center; margin: 0; padding: 8px 10px; }
 .theme-toggle {
   min-height: 34px;
   display: inline-flex;

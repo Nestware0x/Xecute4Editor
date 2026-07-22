@@ -71,11 +71,12 @@
           </div>
           <section id="server-builder-guide" class="server-builder-guide">
             <h2>AIにJSONを構築してもらうためのガイド</h2>
-            <p>次のガイドURLをAIに渡すと、ServerBuilder互換のJSONを生成できます。</p>
-            <a href="server-builder-guide.md" target="_blank">ServerBuilder ガイドを開く</a>
-            <a href="server-builder.schema.json" target="_blank">JSON Schema</a>
-            <a href="llms.txt" target="_blank">AI向け要約（llms.txt）</a>
-            <a href="examples/community.json" target="_blank">コミュニティ例</a>
+            <p>AIには次のガイドURLだけを渡してください。Schema・サンプルなどの補助資料は、このガイドから参照されます。</p>
+            <code id="serverBuilderGuideUrl" class="guide-url"></code>
+            <div class="button-row">
+              <button id="copyServerBuilderGuide" type="button">AI用ガイドURLをコピー</button>
+              <a href="server-builder-guide.md" target="_blank">ガイドを開く</a>
+            </div>
           </section>
         </section>
       </div>

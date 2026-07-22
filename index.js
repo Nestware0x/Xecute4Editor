@@ -213,6 +213,8 @@ const sessionFileInput = document.getElementById('sessionFileInput');
 const workspaceMode = document.getElementById('workspaceMode');
 const serverBuilderPanel = document.getElementById('serverBuilderPanel');
 const serverBuilderJson = document.getElementById('serverBuilderJson');
+const serverBuilderGuideUrl = document.getElementById('serverBuilderGuideUrl');
+const copyServerBuilderGuide = document.getElementById('copyServerBuilderGuide');
 let navigationObserver;
 
 function t(key, values) {
@@ -889,6 +891,7 @@ async function initializeToken(token) {
   state.values = structuredClone(payload.v);
   state.expiresAt = authorization.e;
   state.initialized = true;
+  serverBuilderGuideUrl.textContent = serverBuilderGuideLink();
 
   applyLanguage(payload.i);
 
@@ -984,6 +987,10 @@ function useSettingsTab() {
   render();
 }
 
+function serverBuilderGuideLink() {
+  return new URL('server-builder-guide.md', window.location.href).href;
+}
+
 themeToggle.addEventListener('click', () => {
   const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
   applyTheme(next, true);
@@ -1040,6 +1047,15 @@ document.getElementById('copyButton').addEventListener('click', async () => {
 workspaceMode.addEventListener('change', () => {
   if (workspaceMode.value === 'server-builder') useServerBuilderTab();
   else useSettingsTab();
+});
+
+copyServerBuilderGuide.addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(serverBuilderGuideLink());
+    showMessage('AI用ガイドURLをコピーしました。AIにこのURLと作りたいサーバーの内容を渡してください。', 'success');
+  } catch (error) {
+    showMessage('ガイドURLをコピーできませんでした。', 'error');
+  }
 });
 
 async function importSelectedFile(file) {
