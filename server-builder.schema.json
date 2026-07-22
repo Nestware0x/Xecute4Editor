@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://xecute.example/server-builder.schema.json",
+  "title": "Xecute ServerBuilder v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "categories"],
+  "properties": {
+    "schemaVersion": { "const": "server-builder/v1" },
+    "roles": { "type": "array", "maxItems": 25, "items": { "$ref": "#/$defs/role" } },
+    "categories": { "type": "array", "minItems": 1, "maxItems": 10, "items": { "$ref": "#/$defs/category" } }
+  },
+  "$defs": {
+    "roleNameList": { "type": "array", "minItems": 1, "maxItems": 25, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 100 } },
+    "role": {
+      "type": "object", "additionalProperties": false, "required": ["name"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "hoisted": { "type": "boolean" },
+        "mentionable": { "type": "boolean" }
+      }
+    },
+    "channel": {
+      "type": "object", "additionalProperties": false, "required": ["type", "name"],
+      "properties": {
+        "type": { "enum": ["TEXT", "VOICE"] },
+        "name": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "topic": { "type": "string", "maxLength": 1024 },
+        "initialMessages": { "type": "array", "maxItems": 3, "items": { "type": "string", "minLength": 1, "maxLength": 1000 } },
+        "visibleToRoles": { "$ref": "#/$defs/roleNameList" }
+      }
+    },
+    "category": {
+      "type": "object", "additionalProperties": false, "required": ["name", "channels"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "visibleToRoles": { "$ref": "#/$defs/roleNameList" },
+        "channels": { "type": "array", "minItems": 1, "maxItems": 50, "items": { "$ref": "#/$defs/channel" } }
+      }
+    }
+  }
+}

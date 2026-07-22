@@ -17,6 +17,11 @@
       <div>
         <h1>Xecute Editor 4</h1>
       </div>
+      <label class="workspace-mode-label" for="workspaceMode">Tool</label>
+      <select id="workspaceMode" class="workspace-mode" aria-label="Editor tool">
+        <option value="settings">Settings</option>
+        <option value="server-builder">ServerBuilder</option>
+      </select>
       <div class="brand-status">
         <button id="themeToggle" class="theme-toggle" type="button" aria-label="ダークモードに切り替える" aria-pressed="false">
           <span class="theme-icon theme-icon-light" aria-hidden="true">☀</span>
@@ -51,10 +56,6 @@
       </aside>
 
       <div class="content">
-        <nav class="editor-tabs" aria-label="Editor tools">
-          <button id="settingsTab" class="editor-tab active" type="button">Settings</button>
-          <button id="serverBuilderTab" class="editor-tab" type="button">ServerBuilder</button>
-        </nav>
         <header id="pageTop" class="hero">
           <div id="scopeEyebrow" class="eyebrow" data-i18n="serverConfiguration">サーバー設定</div>
           <h2 id="guildName">Discord Server</h2>
@@ -63,9 +64,19 @@
         </header>
         <div id="settings" class="settings"></div>
         <section id="serverBuilderPanel" class="server-builder-panel hidden">
+          <div id="server-builder-builder">
           <h2>ServerBuilder</h2>
           <p>Paste a <code>server-builder/v1</code> JSON plan. Copy or download creates a one-time <code>/server-builder apply</code> code; it does not change normal Editor settings.</p>
           <textarea id="serverBuilderJson" rows="20" spellcheck="false" placeholder='{"schemaVersion":"server-builder/v1","roles":[],"categories":[]}'></textarea>
+          </div>
+          <section id="server-builder-guide" class="server-builder-guide">
+            <h2>AIにJSONを構築してもらうためのガイド</h2>
+            <p>次のガイドURLをAIに渡すと、ServerBuilder互換のJSONを生成できます。</p>
+            <a href="server-builder-guide.md" target="_blank">ServerBuilder ガイドを開く</a>
+            <a href="server-builder.schema.json" target="_blank">JSON Schema</a>
+            <a href="llms.txt" target="_blank">AI向け要約（llms.txt）</a>
+            <a href="examples/community.json" target="_blank">コミュニティ例</a>
+          </section>
         </section>
       </div>
     </section>

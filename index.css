@@ -103,11 +103,12 @@ h1, h2, h3, p { margin-top: 0; }
 .brand h1 { margin-bottom: 1px; font-size: 15px; letter-spacing: -.01em; }
 .subtitle { color: var(--faint); font-size: 10px; font-weight: 760; letter-spacing: .09em; }
 .brand-status { margin-left: auto; display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; }
-.editor-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
-.editor-tab { border: 1px solid var(--border); border-radius: 8px; background: var(--surface-soft); color: var(--muted); padding: 8px 12px; font-weight: 750; }
-.editor-tab.active { background: var(--accent); border-color: var(--accent); color: white; }
+.workspace-mode-label { color: var(--muted); font-size: 12px; font-weight: 700; }
+.workspace-mode { width: auto; min-height: 34px; padding: 6px 28px 6px 9px; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--surface-soft); color: var(--text); font-weight: 700; }
 .server-builder-panel { padding: 24px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
 .server-builder-panel textarea { width: 100%; min-height: 360px; padding: 12px; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--surface-soft); color: var(--text); font: 13px ui-monospace, SFMono-Regular, Consolas, monospace; resize: vertical; }
+.server-builder-guide { margin-top: 28px; padding-top: 22px; border-top: 1px solid var(--border); }
+.server-builder-guide a { display: block; width: fit-content; margin-top: 10px; color: var(--accent-text); font-weight: 700; }
 .theme-toggle {
   min-height: 34px;
   display: inline-flex;

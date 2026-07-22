@@ -210,8 +210,7 @@ const themeLabel = document.getElementById('themeLabel');
 const importPanel = document.getElementById('importPanel');
 const dropZone = document.getElementById('dropZone');
 const sessionFileInput = document.getElementById('sessionFileInput');
-const settingsTab = document.getElementById('settingsTab');
-const serverBuilderTab = document.getElementById('serverBuilderTab');
+const workspaceMode = document.getElementById('workspaceMode');
 const serverBuilderPanel = document.getElementById('serverBuilderPanel');
 const serverBuilderJson = document.getElementById('serverBuilderJson');
 let navigationObserver;
@@ -818,36 +817,39 @@ function activateNavigation() {
 function render() {
   settingsRoot.replaceChildren();
   navigationRoot.replaceChildren();
-  createNavigationBase();
-
-  const groups = groupedDefinitions();
-  for (const [owner, definitions] of groups) {
-    const name = categoryName(owner);
-    const categoryId = elementId('category', owner);
-    navigationRoot.append(createNavigationGroup(owner, definitions, name, categoryId));
-    settingsRoot.append(createCategory(owner, definitions, name, categoryId));
-  }
-
-  if (groups.length === 0) {
-    const empty = document.createElement('div');
-    empty.className = 'scope-empty';
-    empty.textContent = t('noSettingsForScope');
-    settingsRoot.append(empty);
-  }
-
+  const builder = state.activeTab === 'server-builder' && state.scope === 'GUILD';
   const guildScope = state.scope === 'GUILD';
-  document.getElementById('scopeEyebrow').textContent = t(guildScope ? 'serverConfiguration' : 'userScope');
-  document.getElementById('sidebarScopeLabel').textContent = t(guildScope ? 'serverSettings' : 'userScope');
+  if (builder) {
+    const builderLink = document.createElement('a');
+    builderLink.className = 'nav-channel active'; builderLink.href = '#server-builder-builder'; builderLink.textContent = 'Builder';
+    const guideLink = document.createElement('a');
+    guideLink.className = 'nav-channel'; guideLink.href = '#server-builder-guide'; guideLink.textContent = 'AIにJSONを構築してもらうためのガイド';
+    navigationRoot.append(builderLink, guideLink);
+    document.getElementById('sidebarScopeLabel').textContent = 'ServerBuilder';
+  } else {
+    createNavigationBase();
+    const groups = groupedDefinitions();
+    for (const [owner, definitions] of groups) {
+      const name = categoryName(owner);
+      const categoryId = elementId('category', owner);
+      navigationRoot.append(createNavigationGroup(owner, definitions, name, categoryId));
+      settingsRoot.append(createCategory(owner, definitions, name, categoryId));
+    }
+    if (groups.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'scope-empty'; empty.textContent = t('noSettingsForScope'); settingsRoot.append(empty);
+    }
+    document.getElementById('scopeEyebrow').textContent = t(guildScope ? 'serverConfiguration' : 'userScope');
+    document.getElementById('sidebarScopeLabel').textContent = t(guildScope ? 'serverSettings' : 'userScope');
+  }
 
   editor.classList.remove('hidden');
   actions.classList.remove('hidden');
-  const builder = state.activeTab === 'server-builder' && state.scope === 'GUILD';
   settingsRoot.classList.toggle('hidden', builder);
   document.getElementById('pageTop').classList.toggle('hidden', builder);
   serverBuilderPanel.classList.toggle('hidden', !builder);
-  settingsTab.classList.toggle('active', !builder);
-  serverBuilderTab.classList.toggle('active', builder);
-  serverBuilderTab.classList.toggle('hidden', state.scope !== 'GUILD');
+  workspaceMode.value = builder ? 'server-builder' : 'settings';
+  workspaceMode.classList.toggle('hidden', state.scope !== 'GUILD');
   document.getElementById('resetButton').textContent = builder ? 'JSONを消去' : t('reset');
   document.getElementById('downloadButton').textContent = builder ? 'ServerBuilderファイルをダウンロード' : t('download');
   document.getElementById('copyButton').textContent = builder ? 'ServerBuilderコマンドをコピー' : t('copy');
@@ -1035,8 +1037,10 @@ document.getElementById('copyButton').addEventListener('click', async () => {
   }
 });
 
-settingsTab.addEventListener('click', useSettingsTab);
-serverBuilderTab.addEventListener('click', useServerBuilderTab);
+workspaceMode.addEventListener('change', () => {
+  if (workspaceMode.value === 'server-builder') useServerBuilderTab();
+  else useSettingsTab();
+});
 
 async function importSelectedFile(file) {
   try {
