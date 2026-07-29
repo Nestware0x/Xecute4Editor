@@ -908,6 +908,7 @@ function renderAdministratorPanelV2() {
     ['adminProfileName', 'プロフィール名', '例: 公式パートナー / Authorized Developer', true],
     ['adminDetail', 'プロフィール詳細', '認定理由・担当分野など（任意）', false]
   ]);
+  addAdministratorCandidates(page);
   page.append(title, lead, actionBlock, program, member);
   settingsRoot.append(page);
   const update = () => {
@@ -924,6 +925,18 @@ function renderAdministratorPanelV2() {
       : '対象ユーザーの制度プロフィールを削除します。制度そのものは削除されません。';
   };
   action.addEventListener('change', update); update();
+}
+
+function addAdministratorCandidates(page) {
+  const programs = Array.isArray(state.original['xross-admin.candidates.programs']) ? state.original['xross-admin.candidates.programs'] : [];
+  const profiles = Array.isArray(state.original['xross-admin.candidates.profiles']) ? state.original['xross-admin.candidates.profiles'] : [];
+  const programList = document.createElement('datalist'); programList.id = 'adminProgramCandidates';
+  programs.forEach(program => { const option = document.createElement('option'); option.value = program.id; option.label = program.name || program.id; programList.append(option); });
+  const userList = document.createElement('datalist'); userList.id = 'adminUserCandidates';
+  profiles.forEach(profile => { const option = document.createElement('option'); option.value = String(profile.userId); option.label = `${profile.displayName || '認定済みユーザー'} (${profile.programId})`; userList.append(option); });
+  page.append(programList, userList);
+  document.getElementById('adminProgramId').setAttribute('list', programList.id);
+  document.getElementById('adminUserId').setAttribute('list', userList.id);
 }
 
 function adminFieldGroup(id, heading, fields) {
