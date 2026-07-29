@@ -822,7 +822,7 @@ function render() {
   const builder = state.activeTab === 'server-builder' && state.scope === 'GUILD';
   const guildScope = state.scope === 'GUILD';
   if (state.scope === 'ADMIN') {
-    renderAdministratorPanel();
+    renderAdministratorPanelV2();
     document.getElementById('scopeEyebrow').textContent = 'Xross 管理者専用';
     document.getElementById('sidebarScopeLabel').textContent = 'Xross Admin';
   } else if (builder) {
@@ -882,6 +882,61 @@ function renderAdministratorPanel() {
     ['adminDetail', 'プロフィール詳細（認定時・任意）']
   ].forEach(([id, placeholder]) => { const input = document.createElement('input'); input.id = id; input.placeholder = placeholder; form.append(input); });
   card.append(form); settingsRoot.append(card);
+}
+
+function renderAdministratorPanelV2() {
+  const page = document.createElement('section');
+  page.className = 'admin-editor';
+  const title = document.createElement('h3'); title.textContent = '認定制度を管理';
+  const lead = document.createElement('p'); lead.textContent = '操作を選ぶと、必要な項目だけが表示されます。入力後は画面下部の「適用コマンドをコピー」を押し、Discordで /apply を実行してください。';
+  const actionBlock = document.createElement('div'); actionBlock.className = 'admin-card';
+  const actionLabel = document.createElement('label'); actionLabel.htmlFor = 'adminAction'; actionLabel.textContent = '操作';
+  const action = document.createElement('select'); action.id = 'adminAction';
+  [['program', '制度を作成・更新'], ['grant', 'ユーザーを認定'], ['revoke', '認定を取り消す']].forEach(([value, label]) => {
+    const option = document.createElement('option'); option.value = value; option.textContent = label; action.append(option);
+  });
+  const actionHelp = document.createElement('p'); actionHelp.className = 'admin-help';
+  actionBlock.append(actionLabel, action, actionHelp);
+  const program = adminFieldGroup('adminProgramFields', '制度の情報', [
+    ['adminProgramId', '制度ID', '英小文字・数字・ハイフン。例: nestware-authorized-developer', true],
+    ['adminProgramName', '表示名', '例: Nestware Authorized Developer', true],
+    ['adminDescription', '説明', '制度の目的や対象者（任意）', false],
+    ['adminBadge', 'バッジ名', 'プロフィールに表示する短い名称（任意）', false]
+  ]);
+  const member = adminFieldGroup('adminMemberFields', '認定するユーザー', [
+    ['adminUserId', 'DiscordユーザーID', 'ユーザーのプロフィールからコピーした数字のID', true],
+    ['adminProfileName', 'プロフィール名', '例: 公式パートナー / Authorized Developer', true],
+    ['adminDetail', 'プロフィール詳細', '認定理由・担当分野など（任意）', false]
+  ]);
+  page.append(title, lead, actionBlock, program, member);
+  settingsRoot.append(page);
+  const update = () => {
+    const mode = action.value;
+    program.style.display = '';
+    member.style.display = mode === 'program' ? 'none' : '';
+    document.getElementById('adminProgramName').closest('.admin-field').style.display = mode === 'program' ? '' : 'none';
+    document.getElementById('adminDescription').closest('.admin-field').style.display = mode === 'program' ? '' : 'none';
+    document.getElementById('adminBadge').closest('.admin-field').style.display = mode === 'program' ? '' : 'none';
+    document.getElementById('adminProfileName').closest('.admin-field').style.display = mode === 'grant' ? '' : 'none';
+    document.getElementById('adminDetail').closest('.admin-field').style.display = mode === 'grant' ? '' : 'none';
+    actionHelp.textContent = mode === 'program' ? '新しい制度を登録、または既存制度の表示名・説明を更新します。'
+      : mode === 'grant' ? '既にある制度にユーザーを登録します。Xecute Partnerの付与もここから行えます。'
+      : '対象ユーザーの制度プロフィールを削除します。制度そのものは削除されません。';
+  };
+  action.addEventListener('change', update); update();
+}
+
+function adminFieldGroup(id, heading, fields) {
+  const group = document.createElement('section'); group.id = id; group.className = 'admin-card';
+  const title = document.createElement('h4'); title.textContent = heading; group.append(title);
+  fields.forEach(([inputId, labelText, help, required]) => {
+    const field = document.createElement('label'); field.className = 'admin-field'; field.htmlFor = inputId;
+    const label = document.createElement('span'); label.textContent = labelText + (required ? ' *' : '');
+    const input = document.createElement('input'); input.id = inputId; input.type = 'text'; input.placeholder = help; input.required = required;
+    const description = document.createElement('small'); description.textContent = help;
+    field.append(label, input, description); group.append(field);
+  });
+  return group;
 }
 
 function collectAdministratorValues() {
