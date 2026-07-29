@@ -17,8 +17,8 @@ const I18N = {
     noSettingsForScope: 'この対象で利用できる設定はありません。',
     copy: '適用コマンドをコピー',
     importTitle: 'Editorセッションを手動で読み込む',
-    importDescription: 'Discordの /editor 応答に添付されたXecuteSession.xe4eをここへドロップするか、ファイルを選択してください。',
-    dropZone: 'XecuteSession.xe4eをドロップ',
+    importDescription: 'DiscordのEditor応答に添付されたXecuteSession.pngをここへドロップするか、ファイルを選択してください。',
+    dropZone: 'XecuteSession.pngをドロップ',
     chooseSession: 'ファイルを選択',
     navigation: '設定一覧',
     languageAria: '表示言語',
@@ -81,11 +81,11 @@ const I18N = {
     clipboardFailed: 'クリップボードへコピーできませんでした。ブラウザーの権限を確認してください。',
     copyComplete: '適用コマンドをコピーしました。Discordへ貼り付けてEnterを押すだけで適用できます。',
     fetchingSession: 'Discordから暗号化されたEditorセッションを読み込んでいます…',
-    fetchFailed: 'Discord CDNからセッションを自動取得できませんでした。/editor 応答のXecuteSession.xe4eを下へドロップしてください。',
+    fetchFailed: 'Discord CDNからセッションを自動取得できませんでした。Editor応答のXecuteSession.pngを下へドロップしてください。',
     fetchExpired: 'Discord添付の有効期限が切れたか、アクセスできません。/editor をもう一度実行してください。',
-    fetchBlocked: 'Discord CDNへの自動アクセスがブラウザーまたはネットワークで拒否されました。/editor 応答のXecuteSession.xe4eを下へドロップしてください。',
+    fetchBlocked: 'Discord CDNへの自動アクセスがブラウザーまたはネットワークで拒否されました。Editor応答のXecuteSession.pngを下へドロップしてください。',
     missingSessionKey: '復号鍵がありません。Discordの /editor 応答にあるEditorリンクをもう一度開いてください。',
-    invalidSessionFile: 'XecuteSession.xe4eの形式が正しくありません。',
+    invalidSessionFile: 'XecuteSession.pngの形式が正しくありません。',
     sessionFileTooLarge: 'Editorセッションファイルが大きすぎます。',
     decryptUnsupported: 'このブラウザーは暗号化Editorセッションの復号に対応していません。',
     decryptFailed: 'Editorセッションを復号できませんでした。正しい /editor 応答の添付ファイルを使用してください。',
@@ -104,8 +104,8 @@ const I18N = {
     noSettingsForScope: 'No settings are available for this scope.',
     copy: 'Copy apply command',
     importTitle: 'Import the Editor session manually',
-    importDescription: 'Drop XecuteSession.xe4e from the Discord /editor response here, or choose the file.',
-    dropZone: 'Drop XecuteSession.xe4e',
+    importDescription: 'Drop XecuteSession.png from the Discord Editor response here, or choose the file.',
+    dropZone: 'Drop XecuteSession.png',
     chooseSession: 'Choose file',
     navigation: 'Settings navigation',
     languageAria: 'Display language',
@@ -168,11 +168,11 @@ const I18N = {
     clipboardFailed: 'Could not copy to the clipboard. Check the browser permission.',
     copyComplete: 'Apply command copied. Paste it into Discord and press Enter.',
     fetchingSession: 'Loading the encrypted Editor session from Discord…',
-    fetchFailed: 'The session could not be fetched from Discord CDN. Drop XecuteSession.xe4e from the /editor response below.',
+    fetchFailed: 'The session could not be fetched from Discord CDN. Drop XecuteSession.png from the Editor response below.',
     fetchExpired: 'The Discord attachment has expired or is no longer accessible. Run /editor again.',
-    fetchBlocked: 'The browser or network blocked automatic access to Discord CDN. Drop XecuteSession.xe4e from the /editor response below.',
+    fetchBlocked: 'The browser or network blocked automatic access to Discord CDN. Drop XecuteSession.png from the Editor response below.',
     missingSessionKey: 'The decryption key is missing. Open the Editor link from the Discord /editor response again.',
-    invalidSessionFile: 'This is not a valid XecuteSession.xe4e file.',
+    invalidSessionFile: 'This is not a valid XecuteSession.png file.',
     sessionFileTooLarge: 'The Editor session file is too large.',
     decryptUnsupported: 'This browser cannot decrypt encrypted Editor sessions.',
     decryptFailed: 'The Editor session could not be decrypted. Use the attachment from the matching /editor response.',
@@ -314,13 +314,52 @@ function hideImportPanel() {
 function isDiscordAttachmentUrl(value) {
   try {
     const url = new URL(value);
-    return url.protocol === 'https:' && (
+    const attachmentPath = url.pathname.startsWith('/attachments/')
+      || url.pathname.startsWith('/ephemeral-attachments/');
+    return url.protocol === 'https:' && attachmentPath && (
       url.hostname === 'cdn.discordapp.com'
       || url.hostname === 'media.discordapp.net'
     );
   } catch (error) {
     return false;
   }
+}
+
+async function readBoundedResponse(response) {
+  const declaredLength = Number(response.headers.get('content-length') || 0);
+  if (declaredLength > MAX_SESSION_FILE_BYTES) {
+    throw new Error(t('sessionFileTooLarge'));
+  }
+  if (!response.body || typeof response.body.getReader !== 'function') {
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    if (bytes.length > MAX_SESSION_FILE_BYTES) throw new Error(t('sessionFileTooLarge'));
+    return bytes;
+  }
+
+  const reader = response.body.getReader();
+  const chunks = [];
+  let length = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      length += value.length;
+      if (length > MAX_SESSION_FILE_BYTES) {
+        await reader.cancel();
+        throw new Error(t('sessionFileTooLarge'));
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  const bytes = new Uint8Array(length);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.length;
+  }
+  return bytes;
 }
 
 async function decryptSessionFile(bytes) {
@@ -412,7 +451,7 @@ async function fetchSessionToken() {
         referrerPolicy: 'no-referrer'
       });
       if (response.ok) {
-        return decryptSessionFile(new Uint8Array(await response.arrayBuffer()));
+        return decryptSessionFile(await readBoundedResponse(response));
       }
       if (response.status === 401 || response.status === 403 || response.status === 404) {
         lastError = new Error(t('fetchExpired'));
@@ -420,7 +459,9 @@ async function fetchSessionToken() {
         lastError = new Error(t('fetchFailed'));
       }
     } catch (error) {
-      lastError = new Error(t('fetchBlocked'));
+      lastError = error instanceof TypeError
+        ? new Error(t('fetchBlocked'))
+        : error;
     }
   }
   throw lastError || new Error(t('fetchFailed'));
@@ -862,28 +903,6 @@ function render() {
   activateNavigation();
 }
 
-function renderAdministratorPanel() {
-  const card = document.createElement('section');
-  card.className = 'scope-empty';
-  card.innerHTML = '<h3>Xross 管理者専用画面</h3><p>認定制度の作成・認定付与・取消を行えます。適用時にもBot管理者権限を確認します。</p>';
-  const form = document.createElement('div'); form.className = 'setting';
-  const action = document.createElement('select'); action.id = 'adminAction';
-  [['program', '認定制度を作成・更新'], ['grant', 'ユーザーを認定'], ['revoke', '認定を取消']].forEach(([value, label]) => {
-    const option = document.createElement('option'); option.value = value; option.textContent = label; action.append(option);
-  });
-  form.append(action);
-  [
-    ['adminProgramId', '制度ID（例: nestware-authorized-developer）'],
-    ['adminProgramName', '制度名（制度の作成・更新時）'],
-    ['adminDescription', '制度の説明（任意）'],
-    ['adminBadge', 'バッジ表示名（任意）'],
-    ['adminUserId', 'Discord ユーザーID（認定・取消時）'],
-    ['adminProfileName', 'プロフィール名（認定時）'],
-    ['adminDetail', 'プロフィール詳細（認定時・任意）']
-  ].forEach(([id, placeholder]) => { const input = document.createElement('input'); input.id = id; input.placeholder = placeholder; form.append(input); });
-  card.append(form); settingsRoot.append(card);
-}
-
 function renderAdministratorPanelV2() {
   const page = document.createElement('section');
   page.className = 'admin-editor';
@@ -908,9 +927,9 @@ function renderAdministratorPanelV2() {
     ['adminProfileName', 'プロフィール名', '例: 公式パートナー / Authorized Developer', true],
     ['adminDetail', 'プロフィール詳細', '認定理由・担当分野など（任意）', false]
   ]);
-  addAdministratorCandidates(page);
   page.append(title, lead, actionBlock, program, member);
   settingsRoot.append(page);
+  addAdministratorCandidates(page);
   const update = () => {
     const mode = action.value;
     program.style.display = '';
@@ -933,10 +952,22 @@ function addAdministratorCandidates(page) {
   const programList = document.createElement('datalist'); programList.id = 'adminProgramCandidates';
   programs.forEach(program => { const option = document.createElement('option'); option.value = program.id; option.label = program.name || program.id; programList.append(option); });
   const userList = document.createElement('datalist'); userList.id = 'adminUserCandidates';
-  profiles.forEach(profile => { const option = document.createElement('option'); option.value = String(profile.userId); option.label = `${profile.displayName || '認定済みユーザー'} (${profile.programId})`; userList.append(option); });
+  const renderUsers = () => {
+    const selectedProgram = document.getElementById('adminProgramId')?.value.trim() || '';
+    userList.replaceChildren();
+    profiles.filter(profile => !selectedProgram || profile.programId === selectedProgram).forEach(profile => {
+      const option = document.createElement('option');
+      option.value = String(profile.userId);
+      option.label = `${profile.displayName || '認定済みユーザー'} (${profile.programId})`;
+      userList.append(option);
+    });
+  };
   page.append(programList, userList);
-  document.getElementById('adminProgramId').setAttribute('list', programList.id);
+  const programInput = document.getElementById('adminProgramId');
+  programInput.setAttribute('list', programList.id);
+  programInput.addEventListener('input', renderUsers);
   document.getElementById('adminUserId').setAttribute('list', userList.id);
+  renderUsers();
 }
 
 function adminFieldGroup(id, heading, fields) {
@@ -1045,14 +1076,7 @@ async function initialize() {
       }
       return;
     }
-
-    let token;
-    try {
-      token = decodeURIComponent(hash).trim();
-    } catch (error) {
-      throw new Error(t('invalidUrlEncoding'));
-    }
-    await initializeToken(token);
+    throw new Error(t('invalidLink'));
   } catch (error) {
     showMessage(error.message || String(error), 'error');
   }
