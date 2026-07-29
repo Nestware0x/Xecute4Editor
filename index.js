@@ -821,7 +821,11 @@ function render() {
   navigationRoot.replaceChildren();
   const builder = state.activeTab === 'server-builder' && state.scope === 'GUILD';
   const guildScope = state.scope === 'GUILD';
-  if (builder) {
+  if (state.scope === 'ADMIN') {
+    renderAdministratorPanel();
+    document.getElementById('scopeEyebrow').textContent = 'Xross 管理者専用';
+    document.getElementById('sidebarScopeLabel').textContent = 'Xross Admin';
+  } else if (builder) {
     const builderLink = document.createElement('a');
     builderLink.className = 'nav-channel active'; builderLink.href = '#server-builder-builder'; builderLink.textContent = 'Builder';
     const guideLink = document.createElement('a');
@@ -858,6 +862,48 @@ function render() {
   activateNavigation();
 }
 
+function renderAdministratorPanel() {
+  const card = document.createElement('section');
+  card.className = 'scope-empty';
+  card.innerHTML = '<h3>Xross 管理者専用画面</h3><p>認定制度の作成・認定付与・取消を行えます。適用時にもBot管理者権限を確認します。</p>';
+  const form = document.createElement('div'); form.className = 'setting';
+  const action = document.createElement('select'); action.id = 'adminAction';
+  [['program', '認定制度を作成・更新'], ['grant', 'ユーザーを認定'], ['revoke', '認定を取消']].forEach(([value, label]) => {
+    const option = document.createElement('option'); option.value = value; option.textContent = label; action.append(option);
+  });
+  form.append(action);
+  [
+    ['adminProgramId', '制度ID（例: nestware-authorized-developer）'],
+    ['adminProgramName', '制度名（制度の作成・更新時）'],
+    ['adminDescription', '制度の説明（任意）'],
+    ['adminBadge', 'バッジ表示名（任意）'],
+    ['adminUserId', 'Discord ユーザーID（認定・取消時）'],
+    ['adminProfileName', 'プロフィール名（認定時）'],
+    ['adminDetail', 'プロフィール詳細（認定時・任意）']
+  ].forEach(([id, placeholder]) => { const input = document.createElement('input'); input.id = id; input.placeholder = placeholder; form.append(input); });
+  card.append(form); settingsRoot.append(card);
+}
+
+function collectAdministratorValues() {
+  const value = id => document.getElementById(id)?.value.trim() || '';
+  const action = value('adminAction');
+  const values = {
+    'xross-admin.action': action,
+    'xross-admin.program-id': value('adminProgramId'),
+    'xross-admin.program-name': value('adminProgramName'),
+    'xross-admin.description': value('adminDescription'),
+    'xross-admin.badge': value('adminBadge'),
+    'xross-admin.user-id': value('adminUserId'),
+    'xross-admin.profile-name': value('adminProfileName'),
+    'xross-admin.detail': value('adminDetail')
+  };
+  if (!values['xross-admin.program-id']) throw new Error('制度IDを入力してください。');
+  if (action === 'program' && !values['xross-admin.program-name']) throw new Error('制度名を入力してください。');
+  if ((action === 'grant' || action === 'revoke') && !values['xross-admin.user-id']) throw new Error('DiscordユーザーIDを入力してください。');
+  if (action === 'grant' && !values['xross-admin.profile-name']) throw new Error('プロフィール名を入力してください。');
+  return values;
+}
+
 function updateExpiry() {
   if (!state.expiresAt) return;
   const locale = state.language === 'ja' ? 'ja-JP' : 'en-US';
@@ -872,7 +918,7 @@ async function initializeToken(token) {
   }
   const authorization = await decompressJson(parts[2]);
   const payload = await decompressJson(parts[4]);
-  const scope = authorization.s === 'USER' ? 'USER' : 'GUILD';
+  const scope = authorization.s === 'USER' ? 'USER' : authorization.s === 'ADMIN' ? 'ADMIN' : 'GUILD';
   if ((scope === 'GUILD' && !authorization.g) || !authorization.u || !authorization.e || !authorization.n || !Array.isArray(payload.d) || !payload.v) {
     throw new Error(t('corruptedPayload'));
   }
@@ -957,7 +1003,7 @@ function collectChangedValues() {
 }
 
 async function createApplyCode(changes) {
-  const changedValues = changes || collectChangedValues();
+  const changedValues = changes || (state.scope === 'ADMIN' ? collectAdministratorValues() : collectChangedValues());
   const payload = await compressJson({ v: changedValues });
   return `XE4.1.${state.authorization}.${state.signature}.${payload}`;
 }
