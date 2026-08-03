@@ -37,8 +37,8 @@
       <div class="import-icon" aria-hidden="true">⇧</div>
       <div class="import-copy">
         <h2 id="importTitle" data-i18n="importTitle">Editorセッションを手動で読み込む</h2>
-        <p data-i18n="importDescription">DiscordのEditor応答に添付されたXecuteSession.pngをここへドロップするか、ファイルを選択してください。</p>
-        <div id="dropZone" class="drop-zone" tabindex="0" role="button" data-i18n="dropZone">XecuteSession.pngをドロップ</div>
+        <p data-i18n="importDescription">DiscordのEditor応答に添付されたファイルをここへドロップするか、ファイルを選択してください。</p>
+        <div id="dropZone" class="drop-zone" tabindex="0" role="button" data-i18n="dropZone">Editorファイルをドロップ</div>
       </div>
       <button id="chooseSessionButton" type="button" data-i18n="chooseSession">ファイルを選択</button>
       <input id="sessionFileInput" class="hidden" type="file" accept=".png,image/png">
@@ -67,11 +67,11 @@
         <section id="serverBuilderPanel" class="server-builder-panel hidden">
           <div id="server-builder-builder">
           <h2>ServerBuilder</h2>
-          <p>Paste a <code>server-builder/v1</code> JSON plan. Copy or download creates a one-time <code>/server-builder apply</code> code; it does not change normal Editor settings.</p>
-          <textarea id="serverBuilderJson" rows="20" spellcheck="false" placeholder='{"schemaVersion":"server-builder/v1","roles":[],"categories":[]}'></textarea>
+          <p>サーバー構成データを貼り付けてください。コピーまたはダウンロードすると、一度だけ使える適用コードを作成します。通常のEditor設定には影響しません。</p>
+          <textarea id="serverBuilderJson" rows="20" spellcheck="false" placeholder="AIが作成したサーバー構成データを貼り付け"></textarea>
           </div>
           <section id="server-builder-guide" class="server-builder-guide">
-            <h2>AIにJSONを構築してもらうためのガイド</h2>
+            <h2>AIにサーバー構成を作ってもらうためのガイド</h2>
             <p>AIには次のガイドURLだけを渡してください。Schema・サンプルなどの補助資料は、このガイドから参照されます。</p>
             <code id="serverBuilderGuideUrl" class="guide-url"></code>
             <div class="button-row">

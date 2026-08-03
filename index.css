@@ -536,6 +536,18 @@ button.primary:hover { border-color: var(--accent-hover); background: var(--acce
 .erify-graph-summary strong { font-size: 1.4rem; }
 .erify-graph-summary span { color: var(--muted); font-size: .82rem; text-transform: uppercase; letter-spacing: .08em; }
 .erify-graph-search { width: min(440px, 100%); padding: 11px 13px; border: 1px solid var(--border); border-radius: 10px; color: var(--text); background: var(--surface); }
+.erify-results { display: grid; gap: 12px; }
+.erify-empty-result { margin: 0; padding: 18px; border: 1px dashed var(--border); border-radius: 14px; color: var(--muted); text-align: center; }
+.erify-user-card { display: grid; gap: 12px; padding: 16px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); }
+.erify-user-card.primary { border-color: color-mix(in srgb, #7c5cff 65%, var(--border)); box-shadow: 0 0 0 1px color-mix(in srgb, #7c5cff 20%, transparent); }
+.erify-user-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.erify-user-header strong { font-size: 1.05rem; overflow-wrap: anywhere; }
+.erify-user-header span, .erify-reasons span { padding: 4px 9px; border-radius: 999px; background: color-mix(in srgb, #7c5cff 15%, var(--surface)); color: var(--text); font-size: .78rem; }
+.erify-reasons { display: flex; flex-wrap: wrap; gap: 7px; }
+.erify-user-details { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px 18px; margin: 0; }
+.erify-user-details > div { min-width: 0; }
+.erify-user-details dt { color: var(--muted); font-size: .76rem; }
+.erify-user-details dd { margin: 3px 0 0; overflow-wrap: anywhere; }
 .erify-graph-canvas { width: 100%; min-height: 560px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); overflow: auto; }
 .erify-graph-edge { stroke: color-mix(in srgb, var(--muted) 42%, transparent); stroke-width: 1.4; }
 .erify-graph-edge.signal-device { stroke: #ef5da8; stroke-width: 2.4; }
@@ -548,5 +560,6 @@ button.primary:hover { border-color: var(--accent-hover); background: var(--acce
 .erify-graph-node.dimmed, .erify-graph-edge.dimmed { opacity: .08; }
 @media (max-width: 720px) {
   .erify-graph-summary { grid-template-columns: 1fr; }
+  .erify-user-details { grid-template-columns: 1fr; }
   .erify-graph-canvas { min-height: 420px; }
 }

@@ -17,8 +17,8 @@ const I18N = {
     noSettingsForScope: 'この対象で利用できる設定はありません。',
     copy: '適用コマンドをコピー',
     importTitle: 'Editorセッションを手動で読み込む',
-    importDescription: 'DiscordのEditor応答に添付されたXecuteSession.pngをここへドロップするか、ファイルを選択してください。',
-    dropZone: 'XecuteSession.pngをドロップ',
+    importDescription: 'DiscordのEditor応答に添付されたファイルをここへドロップするか、ファイルを選択してください。',
+    dropZone: 'Editorファイルをドロップ',
     chooseSession: 'ファイルを選択',
     navigation: '設定一覧',
     languageAria: '表示言語',
@@ -50,7 +50,7 @@ const I18N = {
     xrossLanguageDescription: 'Xross EngineとWebエディターで使用する表示言語です。',
     xrossVoiceVolumeLabel: '音声音量',
     xrossVoiceVolumeDescription: 'このDiscordサーバーで再生する音声の音量です（0～100）。',
-    makharaApiKeyDescription: '新しいAPIキーを入力します。保存済みのキーはEditorリンクへ含まれず、空欄なら変更しません。',
+    makharaApiKeyDescription: '新しい接続キーを入力します。保存済みのキーはEditorリンクへ含まれず、空欄なら変更しません。',
     makharaApiModelDescription: 'Makharaが使用するGeminiモデル名です（例: gemini-1.5-flash）。',
     makharaHistoryLimitDescription: 'Geminiへ会話の文脈として送信する直近のDiscordメッセージ数です。',
     makharaCommonPromptDescription: 'このDiscordサーバーの全Makharaプロファイルへ適用する共通ルールです。',
@@ -60,8 +60,8 @@ const I18N = {
     welcomeTargetChannelDescription: '新規参加通知を送信するテキストチャンネルです。0の場合は送信しません。',
     welcomeVoiceEnabledDescription: '初めて参加したユーザーへウェルカム音声を再生します。',
     invalidUrlEncoding: 'EditorリンクのURLエンコードが壊れています。Discordで /editor を再実行してください。',
-    invalidBase64: 'EditorリンクのBase64URLデータが壊れています。Discordで /editor を再実行してください。',
-    base64RestoreFailed: 'EditorリンクをBase64URLとして復元できません。Discordで /editor を再実行してください。',
+    invalidBase64: 'Editorリンクを確認できませんでした。Discordで /editor を再実行してください。',
+    base64RestoreFailed: 'Editorリンクを読み込めませんでした。Discordで /editor を再実行してください。',
     decompressUnsupported: 'このブラウザーは圧縮設定コードに対応していません。',
     compressUnsupported: 'このブラウザーは設定コード生成に対応していません。',
     corruptedPayload: 'Editorリンクのデータが破損しています。',
@@ -80,28 +80,51 @@ const I18N = {
     codeTooLarge: '設定コードがDiscordのcode入力上限を超えました。適用ファイルをダウンロードしてください。',
     clipboardFailed: 'クリップボードへコピーできませんでした。ブラウザーの権限を確認してください。',
     copyComplete: '適用コマンドをコピーしました。Discordへ貼り付けてEnterを押すだけで適用できます。',
-    fetchingSession: 'Discordから暗号化されたEditorセッションを読み込んでいます…',
-    fetchFailed: 'Discord CDNからセッションを自動取得できませんでした。Editor応答のXecuteSession.pngを下へドロップしてください。',
+    fetchingSession: 'DiscordからEditor情報を読み込んでいます…',
+    fetchFailed: 'Editor情報を自動取得できませんでした。DiscordのEditor応答にあるファイルを下へドロップしてください。',
     fetchExpired: 'Discord添付の有効期限が切れたか、アクセスできません。/editor をもう一度実行してください。',
-    fetchBlocked: 'Discord CDNへの自動アクセスがブラウザーまたはネットワークで拒否されました。Editor応答のXecuteSession.pngを下へドロップしてください。',
-    missingSessionKey: '復号鍵がありません。Discordの /editor 応答にあるEditorリンクをもう一度開いてください。',
-    invalidSessionFile: 'XecuteSession.pngの形式が正しくありません。',
-    sessionFileTooLarge: 'Editorセッションファイルが大きすぎます。',
-    decryptUnsupported: 'このブラウザーは暗号化Editorセッションの復号に対応していません。',
-    decryptFailed: 'Editorセッションを復号できませんでした。正しい /editor 応答の添付ファイルを使用してください。',
+    fetchBlocked: 'Editor情報へのアクセスが拒否されました。DiscordのEditor応答にあるファイルを下へドロップしてください。',
+    missingSessionKey: 'Editor情報を開くための情報がありません。Discordの /editor 応答にあるリンクをもう一度開いてください。',
+    invalidSessionFile: '選択したEditorファイルを読み込めません。',
+    sessionFileTooLarge: '選択したEditorファイルが大きすぎます。',
+    decryptUnsupported: 'このブラウザーではEditor情報を安全に開けません。',
+    decryptFailed: 'Editor情報を開けませんでした。対応する /editor 応答のファイルを使用してください。',
     manualLoadComplete: 'Editorセッションを添付ファイルから読み込みました。',
     downloadComplete: 'XecuteApply.xe4aを保存しました。Discordで /apply の file に指定してください。',
     erifyGraph: 'Erify Graph',
-    erifyGraphTitle: 'Erify 関連グラフ',
-    erifyGraphLead: 'ユーザー、端末鍵、ブラウザ識別子、HMAC化ネットワークの関連を表示します。線が複数重なるほど関連性が高い候補です。',
-    erifyGraphEmpty: 'Erifyグラフデータがありません。',
-    erifyGraphUsers: 'ユーザー',
-    erifyGraphSignals: 'シグナル',
-    erifyGraphLinks: 'リンク',
-    erifyGraphSearch: 'DiscordユーザーIDを検索',
-    erifyGraphGenerated: '生成日時: {date}。生IPや端末の生データは含まれません。',
-    erifyGraphRestricted: 'IP由来の詳細は認定プログラム「{program}」の保有者とXross管理者だけに表示されます。',
-    erifyGraphDetailsVisible: '認定済みのため、IP由来の詳細情報を表示しています。',
+    erifyGraphTitle: 'Erify 関連ユーザー検索',
+    erifyGraphLead: 'DiscordユーザーIDを入力すると、本人と利用環境が一致する可能性のあるユーザーを一覧で確認できます。',
+    erifyGraphEmpty: '確認できるErify記録がありません。',
+    erifyGraphUsers: '確認済みユーザー',
+    erifyGraphSignals: '共有された利用情報',
+    erifyGraphLinks: '関連記録',
+    erifyGraphSearch: 'DiscordユーザーIDを入力',
+    erifyGraphSearchHint: '完全なユーザーIDを入力してください。',
+    erifyGraphNoMatch: '一致するユーザーが見つかりません。',
+    erifyGraphPrimary: '検索したユーザー',
+    erifyGraphRelated: '関連する可能性のあるユーザー',
+    erifyGraphGenerated: '最終更新: {date}',
+    erifyGraphRestricted: '詳細情報は、このサーバーを管理できる認定パートナーだけが確認できます。',
+    erifyGraphDetailsVisible: '管理権限とパートナー認定を確認しました。詳細情報を表示できます。',
+    erifyGraphSameDevice: '同じ端末',
+    erifyGraphSameConnection: '同じ接続元',
+    erifyGraphSameBrowser: '同じ利用環境',
+    erifyGraphNearbyConnection: '近い接続範囲',
+    erifyGraphSimilarContext: '似た接続環境',
+    erifyGraphUserId: 'ユーザーID',
+    erifyGraphResult: '確認結果',
+    erifyGraphAttention: '注意度',
+    erifyGraphAccountCreated: 'アカウント作成日時',
+    erifyGraphIpAddress: '接続元アドレス',
+    erifyGraphEmailAddress: '登録メールアドレス',
+    erifyGraphLocation: 'おおよその地域',
+    erifyGraphProvider: '接続事業者',
+    erifyGraphRisk: '追加確認が必要な接続',
+    erifyGraphAutomation: '自動操作の可能性',
+    erifyGraphTimezoneMismatch: '利用地域の不一致',
+    erifyGraphDecisionPass: '認証済み',
+    erifyGraphDecisionReview: '追加確認',
+    erifyGraphDecisionDeny: '認証不可',
     erifyGraphUnknown: '不明',
     erifyGraphYes: 'はい',
     erifyGraphNo: 'いいえ'
@@ -118,8 +141,8 @@ const I18N = {
     noSettingsForScope: 'No settings are available for this scope.',
     copy: 'Copy apply command',
     importTitle: 'Import the Editor session manually',
-    importDescription: 'Drop XecuteSession.png from the Discord Editor response here, or choose the file.',
-    dropZone: 'Drop XecuteSession.png',
+    importDescription: 'Drop the file from the Discord Editor response here, or choose it below.',
+    dropZone: 'Drop the Editor file',
     chooseSession: 'Choose file',
     navigation: 'Settings navigation',
     languageAria: 'Display language',
@@ -151,7 +174,7 @@ const I18N = {
     xrossLanguageDescription: 'Language used by Xross Engine and the Web Editor.',
     xrossVoiceVolumeLabel: 'Voice volume',
     xrossVoiceVolumeDescription: 'Voice playback volume for this Discord server (0-100).',
-    makharaApiKeyDescription: 'Enter a new API key. Saved keys are never included in Editor links; leave blank to keep the current key.',
+    makharaApiKeyDescription: 'Enter a new connection key. Saved keys are never included in Editor links; leave blank to keep the current key.',
     makharaApiModelDescription: 'Gemini model name used by Makhara, for example gemini-1.5-flash.',
     makharaHistoryLimitDescription: 'Number of recent Discord messages sent to Gemini as context.',
     makharaCommonPromptDescription: 'Rules applied to every Makhara profile in this Discord server.',
@@ -161,8 +184,8 @@ const I18N = {
     welcomeTargetChannelDescription: 'Text channel for new-member notifications. Enter 0 to disable delivery.',
     welcomeVoiceEnabledDescription: 'Play a welcome voice message for first-time participants.',
     invalidUrlEncoding: 'The Editor link has invalid URL encoding. Run /editor again in Discord.',
-    invalidBase64: 'The Editor link contains invalid Base64URL data. Run /editor again in Discord.',
-    base64RestoreFailed: 'The Editor link could not be decoded as Base64URL. Run /editor again in Discord.',
+    invalidBase64: 'The Editor link could not be verified. Run /editor again in Discord.',
+    base64RestoreFailed: 'The Editor link could not be loaded. Run /editor again in Discord.',
     decompressUnsupported: 'This browser does not support compressed setting codes.',
     compressUnsupported: 'This browser cannot generate setting codes.',
     corruptedPayload: 'The Editor link data is corrupted.',
@@ -181,28 +204,51 @@ const I18N = {
     codeTooLarge: 'The setting code exceeds Discord\'s code input limit. Download the apply file instead.',
     clipboardFailed: 'Could not copy to the clipboard. Check the browser permission.',
     copyComplete: 'Apply command copied. Paste it into Discord and press Enter.',
-    fetchingSession: 'Loading the encrypted Editor session from Discord…',
-    fetchFailed: 'The session could not be fetched from Discord CDN. Drop XecuteSession.png from the Editor response below.',
+    fetchingSession: 'Loading Editor information from Discord…',
+    fetchFailed: 'Editor information could not be loaded automatically. Drop the file from the Discord Editor response below.',
     fetchExpired: 'The Discord attachment has expired or is no longer accessible. Run /editor again.',
-    fetchBlocked: 'The browser or network blocked automatic access to Discord CDN. Drop XecuteSession.png from the Editor response below.',
-    missingSessionKey: 'The decryption key is missing. Open the Editor link from the Discord /editor response again.',
-    invalidSessionFile: 'This is not a valid XecuteSession.png file.',
-    sessionFileTooLarge: 'The Editor session file is too large.',
-    decryptUnsupported: 'This browser cannot decrypt encrypted Editor sessions.',
-    decryptFailed: 'The Editor session could not be decrypted. Use the attachment from the matching /editor response.',
+    fetchBlocked: 'Access to the Editor information was blocked. Drop the file from the Discord Editor response below.',
+    missingSessionKey: 'Information required to open the Editor is missing. Open the link from the Discord /editor response again.',
+    invalidSessionFile: 'The selected Editor file could not be read.',
+    sessionFileTooLarge: 'The selected Editor file is too large.',
+    decryptUnsupported: 'This browser cannot open the Editor information safely.',
+    decryptFailed: 'The Editor information could not be opened. Use the file from the matching /editor response.',
     manualLoadComplete: 'The Editor session was loaded from the attachment.',
     downloadComplete: 'XecuteApply.xe4a was saved. Select it in the file option of /apply in Discord.',
     erifyGraph: 'Erify Graph',
-    erifyGraphTitle: 'Erify relationship graph',
-    erifyGraphLead: 'Shows relationships between users, device keys, browser identifiers, and HMAC-protected network signals. Multiple overlapping links indicate a stronger relationship candidate.',
-    erifyGraphEmpty: 'No Erify graph data is available.',
-    erifyGraphUsers: 'Users',
-    erifyGraphSignals: 'Signals',
-    erifyGraphLinks: 'Links',
-    erifyGraphSearch: 'Search by Discord user ID',
-    erifyGraphGenerated: 'Generated: {date}. Raw IP addresses and raw device data are not included.',
-    erifyGraphRestricted: 'IP-derived details are visible only to holders of the “{program}” certification and Xross administrators.',
-    erifyGraphDetailsVisible: 'IP-derived details are visible because this Editor session is certified.',
+    erifyGraphTitle: 'Erify related user search',
+    erifyGraphLead: 'Enter a Discord user ID to list that user and other users who may share the same device or connection.',
+    erifyGraphEmpty: 'No Erify records are available.',
+    erifyGraphUsers: 'Verified users',
+    erifyGraphSignals: 'Shared usage information',
+    erifyGraphLinks: 'Relationship records',
+    erifyGraphSearch: 'Enter a Discord user ID',
+    erifyGraphSearchHint: 'Enter the complete user ID.',
+    erifyGraphNoMatch: 'No matching user was found.',
+    erifyGraphPrimary: 'Searched user',
+    erifyGraphRelated: 'Potentially related users',
+    erifyGraphGenerated: 'Last updated: {date}',
+    erifyGraphRestricted: 'Details are available only to certified partners who can manage this server.',
+    erifyGraphDetailsVisible: 'Server management access and partner certification were confirmed. Details are available.',
+    erifyGraphSameDevice: 'Same device',
+    erifyGraphSameConnection: 'Same connection',
+    erifyGraphSameBrowser: 'Same usage environment',
+    erifyGraphNearbyConnection: 'Nearby connection range',
+    erifyGraphSimilarContext: 'Similar connection environment',
+    erifyGraphUserId: 'User ID',
+    erifyGraphResult: 'Verification result',
+    erifyGraphAttention: 'Attention level',
+    erifyGraphAccountCreated: 'Account created',
+    erifyGraphIpAddress: 'Connection address',
+    erifyGraphEmailAddress: 'Registered email address',
+    erifyGraphLocation: 'Approximate location',
+    erifyGraphProvider: 'Connection provider',
+    erifyGraphRisk: 'Connection needs additional review',
+    erifyGraphAutomation: 'Possible automated activity',
+    erifyGraphTimezoneMismatch: 'Usage region mismatch',
+    erifyGraphDecisionPass: 'Verified',
+    erifyGraphDecisionReview: 'Needs review',
+    erifyGraphDecisionDeny: 'Not verified',
     erifyGraphUnknown: 'unknown',
     erifyGraphYes: 'yes',
     erifyGraphNo: 'no'
@@ -900,9 +946,9 @@ function renderErifyRelationshipGraph() {
     const empty = document.createElement('p'); empty.textContent = t('erifyGraphEmpty'); page.append(empty); settingsRoot.append(page); return;
   }
 
-  const nodes = graph.nodes.slice(0, 300);
+  const nodes = graph.nodes.slice(0, 500);
   const nodeIds = new Set(nodes.map(node => node.id));
-  const edges = graph.edges.filter(edge => nodeIds.has(edge.source) && nodeIds.has(edge.target)).slice(0, 800);
+  const edges = graph.edges.filter(edge => nodeIds.has(edge.source) && nodeIds.has(edge.target)).slice(0, 2000);
   const users = nodes.filter(node => node.kind === 'user');
   const signals = nodes.filter(node => node.kind === 'signal');
   const summary = document.createElement('div'); summary.className = 'erify-graph-summary';
@@ -913,76 +959,93 @@ function renderErifyRelationshipGraph() {
 
   const search = document.createElement('input');
   search.type = 'search'; search.className = 'erify-graph-search'; search.placeholder = t('erifyGraphSearch');
+  search.inputMode = 'numeric'; search.autocomplete = 'off'; search.setAttribute('aria-label', t('erifyGraphSearch'));
   page.append(search);
   const access = document.createElement('p');
   access.className = 'erify-graph-note';
-  access.textContent = graph.networkDetailsVisible
+  access.textContent = graph.sensitiveDetailsVisible
     ? t('erifyGraphDetailsVisible')
-    : t('erifyGraphRestricted', { program: graph.detailProgramId || 'xecute-partner' });
+    : t('erifyGraphRestricted');
   page.append(access);
-  const canvas = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  canvas.classList.add('erify-graph-canvas'); canvas.setAttribute('viewBox', '0 0 1420 760');
-  canvas.setAttribute('role', 'img'); canvas.setAttribute('aria-label', 'Erify user relationship graph');
-  const positions = new Map();
-  users.forEach((node, index) => positions.set(node.id, { x: 170, y: 55 + index * Math.max(28, 650 / Math.max(1, users.length)) }));
-  const columns = ['device', 'browser', 'network', 'network-prefix', 'network-context'];
-  signals.forEach((node, index) => {
-    const column = Math.max(0, columns.indexOf(node.signalType));
-    const sameType = signals.filter(item => item.signalType === node.signalType);
-    const typeIndex = sameType.findIndex(item => item.id === node.id);
-    positions.set(node.id, { x: 470 + column * 220, y: 55 + typeIndex * Math.max(24, 650 / Math.max(1, sameType.length)) });
-  });
+  const results = document.createElement('div'); results.className = 'erify-results';
+  page.append(results);
+  const userById = new Map(users.map(user => [user.id, user]));
+  const edgesByUser = new Map();
+  const edgesBySignal = new Map();
   edges.forEach(edge => {
-    const from = positions.get(edge.source); const to = positions.get(edge.target); if (!from || !to) return;
-    const line = document.createElementNS(canvas.namespaceURI, 'line');
-    line.setAttribute('x1', from.x); line.setAttribute('y1', from.y); line.setAttribute('x2', to.x); line.setAttribute('y2', to.y);
-    line.classList.add('erify-graph-edge', `signal-${edge.type}`); line.dataset.source = edge.source; line.dataset.target = edge.target;
-    canvas.append(line);
+    if (!edgesByUser.has(edge.source)) edgesByUser.set(edge.source, []);
+    if (!edgesBySignal.has(edge.target)) edgesBySignal.set(edge.target, []);
+    edgesByUser.get(edge.source).push(edge);
+    edgesBySignal.get(edge.target).push(edge);
   });
-  nodes.forEach(node => {
-    const point = positions.get(node.id); if (!point) return;
-    const group = document.createElementNS(canvas.namespaceURI, 'g'); group.classList.add('erify-graph-node', node.kind); group.dataset.id = node.id;
-    const circle = document.createElementNS(canvas.namespaceURI, 'circle'); circle.setAttribute('cx', point.x); circle.setAttribute('cy', point.y); circle.setAttribute('r', node.kind === 'user' ? 11 : 8);
-    const label = document.createElementNS(canvas.namespaceURI, 'text'); label.setAttribute('x', point.x + 15); label.setAttribute('y', point.y + 4); label.textContent = String(node.label || node.id).slice(0, 28);
-    const tooltip = document.createElementNS(canvas.namespaceURI, 'title');
-    if (node.kind === 'user') {
-      const unknown = t('erifyGraphUnknown');
-      const details = [
-        `Discord ID: ${node.label}`,
-        `Decision: ${node.decision || 'UNKNOWN'}`,
-        `Score: ${node.score || 0}`,
-        `Account created: ${node.accountCreatedAt ? new Date(node.accountCreatedAt * 1000).toLocaleString(state.language === 'en' ? 'en-US' : 'ja-JP') : unknown}`
-      ];
-      if (graph.networkDetailsVisible) {
-        details.push(
-          `ASN: ${node.asn || unknown}`,
-          `Organization: ${node.asOrganization || unknown}`,
-          `Country / Continent: ${node.country || 'XX'} / ${node.continent || unknown}`,
-          `Region / City: ${node.region || unknown} / ${node.city || unknown}`,
-          `Postal code: ${node.postalCode || unknown}`,
-          `Coordinates: ${node.latitude && node.longitude ? `${node.latitude}, ${node.longitude}` : unknown}`,
-          `Browser / IP timezone: ${node.timezone || unknown} / ${node.ipTimezone || unknown}`,
-          `Cloudflare colo: ${node.colo || unknown}`,
-          `ASN risk: ${node.asnRisk ? t('erifyGraphYes') : t('erifyGraphNo')}`,
-          `Tor: ${node.tor ? t('erifyGraphYes') : t('erifyGraphNo')}`,
-          `Automation: ${node.automation ? t('erifyGraphYes') : t('erifyGraphNo')}`,
-          `Timezone mismatch: ${node.timezoneMismatch ? t('erifyGraphYes') : t('erifyGraphNo')}`
-        );
-      }
-      tooltip.textContent = details.join('\n');
-    } else {
-      tooltip.textContent = `${node.signalType}: ${node.label}`;
+  const reasonLabels = {
+    device: 'erifyGraphSameDevice', network: 'erifyGraphSameConnection', browser: 'erifyGraphSameBrowser',
+    'network-prefix': 'erifyGraphNearbyConnection', 'network-context': 'erifyGraphSimilarContext'
+  };
+  const decisionLabel = decision => {
+    const key = String(decision || '').toUpperCase();
+    return key === 'PASS' ? t('erifyGraphDecisionPass')
+      : key === 'REVIEW' ? t('erifyGraphDecisionReview')
+        : key === 'DENY' ? t('erifyGraphDecisionDeny') : t('erifyGraphUnknown');
+  };
+  const addDetail = (list, label, value) => {
+    if (value === undefined || value === null || value === '') return;
+    const row = document.createElement('div');
+    const term = document.createElement('dt'); term.textContent = label;
+    const detail = document.createElement('dd'); detail.textContent = String(value);
+    row.append(term, detail); list.append(row);
+  };
+  const renderUser = (user, reasons, primary) => {
+    const card = document.createElement('article'); card.className = `erify-user-card${primary ? ' primary' : ''}`;
+    const header = document.createElement('div'); header.className = 'erify-user-header';
+    const id = document.createElement('strong'); id.textContent = String(user.label || user.id.replace(/^u:/, ''));
+    const badge = document.createElement('span'); badge.textContent = primary ? t('erifyGraphPrimary') : t('erifyGraphRelated');
+    header.append(id, badge); card.append(header);
+    if (reasons.size) {
+      const reasonList = document.createElement('div'); reasonList.className = 'erify-reasons';
+      [...reasons].forEach(reason => {
+        const chip = document.createElement('span'); chip.textContent = t(reasonLabels[reason] || 'erifyGraphSimilarContext'); reasonList.append(chip);
+      });
+      card.append(reasonList);
     }
-    group.append(circle, label, tooltip); canvas.append(group);
-  });
-  search.addEventListener('input', () => {
-    const query = search.value.trim().toLowerCase();
-    const matched = new Set(nodes.filter(node => !query || String(node.label).toLowerCase().includes(query)).map(node => node.id));
-    if (query) edges.forEach(edge => { if (matched.has(edge.source) || matched.has(edge.target)) { matched.add(edge.source); matched.add(edge.target); } });
-    canvas.querySelectorAll('.erify-graph-node').forEach(node => node.classList.toggle('dimmed', query && !matched.has(node.dataset.id)));
-    canvas.querySelectorAll('.erify-graph-edge').forEach(edge => edge.classList.toggle('dimmed', query && !(matched.has(edge.dataset.source) && matched.has(edge.dataset.target))));
-  });
-  page.append(canvas);
+    const details = document.createElement('dl'); details.className = 'erify-user-details';
+    addDetail(details, t('erifyGraphUserId'), user.label);
+    addDetail(details, t('erifyGraphResult'), decisionLabel(user.decision));
+    addDetail(details, t('erifyGraphAttention'), Number(user.score || 0));
+    addDetail(details, t('erifyGraphAccountCreated'), user.accountCreatedAt
+      ? new Date(user.accountCreatedAt * 1000).toLocaleString(state.language === 'en' ? 'en-US' : 'ja-JP') : t('erifyGraphUnknown'));
+    if (graph.sensitiveDetailsVisible) {
+      addDetail(details, t('erifyGraphIpAddress'), user.ipAddress);
+      addDetail(details, t('erifyGraphEmailAddress'), user.emailAddress);
+      addDetail(details, t('erifyGraphLocation'), [user.country, user.region, user.city].filter(Boolean).join(' / '));
+      addDetail(details, t('erifyGraphProvider'), user.asOrganization);
+      addDetail(details, t('erifyGraphRisk'), user.asnRisk || user.tor ? t('erifyGraphYes') : t('erifyGraphNo'));
+      addDetail(details, t('erifyGraphAutomation'), user.automation ? t('erifyGraphYes') : t('erifyGraphNo'));
+      addDetail(details, t('erifyGraphTimezoneMismatch'), user.timezoneMismatch ? t('erifyGraphYes') : t('erifyGraphNo'));
+    }
+    card.append(details); return card;
+  };
+  const updateResults = () => {
+    results.replaceChildren();
+    const query = search.value.trim();
+    if (!query) { const hint = document.createElement('p'); hint.className = 'erify-graph-note'; hint.textContent = t('erifyGraphSearchHint'); results.append(hint); return; }
+    const primary = users.find(user => String(user.label) === query || user.id === `u:${query}`);
+    if (!primary) { const empty = document.createElement('p'); empty.className = 'erify-empty-result'; empty.textContent = t('erifyGraphNoMatch'); results.append(empty); return; }
+    results.append(renderUser(primary, new Set(), true));
+    const related = new Map();
+    (edgesByUser.get(primary.id) || []).forEach(edge => {
+      (edgesBySignal.get(edge.target) || []).forEach(candidate => {
+        if (candidate.source === primary.id || !userById.has(candidate.source)) return;
+        if (!related.has(candidate.source)) related.set(candidate.source, new Set());
+        related.get(candidate.source).add(edge.type);
+      });
+    });
+    [...related.entries()]
+      .sort((left, right) => right[1].size - left[1].size || String(userById.get(left[0]).label).localeCompare(String(userById.get(right[0]).label)))
+      .forEach(([userId, reasons]) => results.append(renderUser(userById.get(userId), reasons, false)));
+  };
+  search.addEventListener('input', updateResults);
+  updateResults();
   const note = document.createElement('p'); note.className = 'erify-graph-note';
   note.textContent = t('erifyGraphGenerated', {
     date: new Date((graph.generatedAt || 0) * 1000).toLocaleString(state.language === 'en' ? 'en-US' : 'ja-JP')
@@ -999,7 +1062,7 @@ function render() {
   if (erifyGraph) {
     renderErifyRelationshipGraph();
     document.getElementById('scopeEyebrow').textContent = 'Erify 管理者専用';
-    document.getElementById('sidebarScopeLabel').textContent = 'Relationship Graph';
+    document.getElementById('sidebarScopeLabel').textContent = state.language === 'en' ? 'Related user search' : '関連ユーザー検索';
   } else if (state.scope === 'ADMIN') {
     renderAdministratorPanelV2();
     document.getElementById('scopeEyebrow').textContent = 'Xross 管理者専用';
@@ -1008,7 +1071,7 @@ function render() {
     const builderLink = document.createElement('a');
     builderLink.className = 'nav-channel active'; builderLink.href = '#server-builder-builder'; builderLink.textContent = 'Builder';
     const guideLink = document.createElement('a');
-    guideLink.className = 'nav-channel'; guideLink.href = '#server-builder-guide'; guideLink.textContent = 'AIにJSONを構築してもらうためのガイド';
+    guideLink.className = 'nav-channel'; guideLink.href = '#server-builder-guide'; guideLink.textContent = 'AIにサーバー構成を作ってもらうためのガイド';
     navigationRoot.append(builderLink, guideLink);
     document.getElementById('sidebarScopeLabel').textContent = 'ServerBuilder';
   } else {
@@ -1035,7 +1098,7 @@ function render() {
   serverBuilderPanel.classList.toggle('hidden', !builder);
   workspaceMode.value = erifyGraph ? 'erify-graph' : builder ? 'server-builder' : 'settings';
   workspaceMode.classList.toggle('hidden', state.scope !== 'GUILD');
-  document.getElementById('resetButton').textContent = builder ? 'JSONを消去' : t('reset');
+  document.getElementById('resetButton').textContent = builder ? '構成データを消去' : t('reset');
   document.getElementById('downloadButton').textContent = builder ? 'ServerBuilderファイルをダウンロード' : t('download');
   document.getElementById('copyButton').textContent = builder ? 'ServerBuilderコマンドをコピー' : t('copy');
   activateNavigation();
@@ -1245,7 +1308,7 @@ async function createServerBuilderCode() {
   try {
     plan = JSON.parse(serverBuilderJson.value);
   } catch (error) {
-    throw new Error('ServerBuilder JSONの形式が正しくありません。');
+    throw new Error('サーバー構成データの形式が正しくありません。');
   }
   if (!plan || plan.schemaVersion !== 'server-builder/v1') {
     throw new Error('schemaVersion は server-builder/v1 にしてください。');
