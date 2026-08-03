@@ -90,7 +90,21 @@ const I18N = {
     decryptUnsupported: 'このブラウザーは暗号化Editorセッションの復号に対応していません。',
     decryptFailed: 'Editorセッションを復号できませんでした。正しい /editor 応答の添付ファイルを使用してください。',
     manualLoadComplete: 'Editorセッションを添付ファイルから読み込みました。',
-    downloadComplete: 'XecuteApply.xe4aを保存しました。Discordで /apply の file に指定してください。'
+    downloadComplete: 'XecuteApply.xe4aを保存しました。Discordで /apply の file に指定してください。',
+    erifyGraph: 'Erify Graph',
+    erifyGraphTitle: 'Erify 関連グラフ',
+    erifyGraphLead: 'ユーザー、端末鍵、ブラウザ識別子、HMAC化ネットワークの関連を表示します。線が複数重なるほど関連性が高い候補です。',
+    erifyGraphEmpty: 'Erifyグラフデータがありません。',
+    erifyGraphUsers: 'ユーザー',
+    erifyGraphSignals: 'シグナル',
+    erifyGraphLinks: 'リンク',
+    erifyGraphSearch: 'DiscordユーザーIDを検索',
+    erifyGraphGenerated: '生成日時: {date}。生IPや端末の生データは含まれません。',
+    erifyGraphRestricted: 'IP由来の詳細は認定プログラム「{program}」の保有者とXross管理者だけに表示されます。',
+    erifyGraphDetailsVisible: '認定済みのため、IP由来の詳細情報を表示しています。',
+    erifyGraphUnknown: '不明',
+    erifyGraphYes: 'はい',
+    erifyGraphNo: 'いいえ'
   },
   en: {
     serverSettings: 'Server settings',
@@ -177,7 +191,21 @@ const I18N = {
     decryptUnsupported: 'This browser cannot decrypt encrypted Editor sessions.',
     decryptFailed: 'The Editor session could not be decrypted. Use the attachment from the matching /editor response.',
     manualLoadComplete: 'The Editor session was loaded from the attachment.',
-    downloadComplete: 'XecuteApply.xe4a was saved. Select it in the file option of /apply in Discord.'
+    downloadComplete: 'XecuteApply.xe4a was saved. Select it in the file option of /apply in Discord.',
+    erifyGraph: 'Erify Graph',
+    erifyGraphTitle: 'Erify relationship graph',
+    erifyGraphLead: 'Shows relationships between users, device keys, browser identifiers, and HMAC-protected network signals. Multiple overlapping links indicate a stronger relationship candidate.',
+    erifyGraphEmpty: 'No Erify graph data is available.',
+    erifyGraphUsers: 'Users',
+    erifyGraphSignals: 'Signals',
+    erifyGraphLinks: 'Links',
+    erifyGraphSearch: 'Search by Discord user ID',
+    erifyGraphGenerated: 'Generated: {date}. Raw IP addresses and raw device data are not included.',
+    erifyGraphRestricted: 'IP-derived details are visible only to holders of the “{program}” certification and Xross administrators.',
+    erifyGraphDetailsVisible: 'IP-derived details are visible because this Editor session is certified.',
+    erifyGraphUnknown: 'unknown',
+    erifyGraphYes: 'yes',
+    erifyGraphNo: 'no'
   }
 };
 
@@ -863,13 +891,13 @@ function renderErifyRelationshipGraph() {
   const page = document.createElement('section');
   page.className = 'erify-graph-viewer';
   const heading = document.createElement('div'); heading.className = 'erify-graph-heading';
-  const title = document.createElement('h3'); title.textContent = 'Erify 関連グラフ';
+  const title = document.createElement('h3'); title.textContent = t('erifyGraphTitle');
   const lead = document.createElement('p');
-  lead.textContent = 'ユーザー、端末鍵、ブラウザ識別子、HMAC化ネットワークの関連を表示します。線が複数重なるほど関連性が高い候補です。';
+  lead.textContent = t('erifyGraphLead');
   heading.append(title, lead);
   page.append(heading);
   if (!graph || graph.type !== 'erify-relationship-graph' || !Array.isArray(graph.nodes) || !Array.isArray(graph.edges)) {
-    const empty = document.createElement('p'); empty.textContent = 'Erifyグラフデータがありません。'; page.append(empty); settingsRoot.append(page); return;
+    const empty = document.createElement('p'); empty.textContent = t('erifyGraphEmpty'); page.append(empty); settingsRoot.append(page); return;
   }
 
   const nodes = graph.nodes.slice(0, 300);
@@ -878,14 +906,20 @@ function renderErifyRelationshipGraph() {
   const users = nodes.filter(node => node.kind === 'user');
   const signals = nodes.filter(node => node.kind === 'signal');
   const summary = document.createElement('div'); summary.className = 'erify-graph-summary';
-  [['Users', users.length], ['Signals', signals.length], ['Links', edges.length]].forEach(([label, value]) => {
+  [[t('erifyGraphUsers'), users.length], [t('erifyGraphSignals'), signals.length], [t('erifyGraphLinks'), edges.length]].forEach(([label, value]) => {
     const card = document.createElement('div'); card.innerHTML = `<strong>${value}</strong><span>${label}</span>`; summary.append(card);
   });
   page.append(summary);
 
   const search = document.createElement('input');
-  search.type = 'search'; search.className = 'erify-graph-search'; search.placeholder = 'DiscordユーザーIDを検索';
+  search.type = 'search'; search.className = 'erify-graph-search'; search.placeholder = t('erifyGraphSearch');
   page.append(search);
+  const access = document.createElement('p');
+  access.className = 'erify-graph-note';
+  access.textContent = graph.networkDetailsVisible
+    ? t('erifyGraphDetailsVisible')
+    : t('erifyGraphRestricted', { program: graph.detailProgramId || 'xecute-partner' });
+  page.append(access);
   const canvas = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   canvas.classList.add('erify-graph-canvas'); canvas.setAttribute('viewBox', '0 0 1420 760');
   canvas.setAttribute('role', 'img'); canvas.setAttribute('aria-label', 'Erify user relationship graph');
@@ -911,9 +945,34 @@ function renderErifyRelationshipGraph() {
     const circle = document.createElementNS(canvas.namespaceURI, 'circle'); circle.setAttribute('cx', point.x); circle.setAttribute('cy', point.y); circle.setAttribute('r', node.kind === 'user' ? 11 : 8);
     const label = document.createElementNS(canvas.namespaceURI, 'text'); label.setAttribute('x', point.x + 15); label.setAttribute('y', point.y + 4); label.textContent = String(node.label || node.id).slice(0, 28);
     const tooltip = document.createElementNS(canvas.namespaceURI, 'title');
-    tooltip.textContent = node.kind === 'user'
-      ? `Discord ID: ${node.label}\nDecision: ${node.decision || 'UNKNOWN'}\nScore: ${node.score || 0}\nAccount created: ${node.accountCreatedAt ? new Date(node.accountCreatedAt * 1000).toLocaleString('ja-JP') : 'unknown'}\nASN: ${node.asn || 'unknown'}\nCountry: ${node.country || 'XX'}\nTimezone: ${node.timezone || 'unknown'}`
-      : `${node.signalType}: ${node.label}`;
+    if (node.kind === 'user') {
+      const unknown = t('erifyGraphUnknown');
+      const details = [
+        `Discord ID: ${node.label}`,
+        `Decision: ${node.decision || 'UNKNOWN'}`,
+        `Score: ${node.score || 0}`,
+        `Account created: ${node.accountCreatedAt ? new Date(node.accountCreatedAt * 1000).toLocaleString(state.language === 'en' ? 'en-US' : 'ja-JP') : unknown}`
+      ];
+      if (graph.networkDetailsVisible) {
+        details.push(
+          `ASN: ${node.asn || unknown}`,
+          `Organization: ${node.asOrganization || unknown}`,
+          `Country / Continent: ${node.country || 'XX'} / ${node.continent || unknown}`,
+          `Region / City: ${node.region || unknown} / ${node.city || unknown}`,
+          `Postal code: ${node.postalCode || unknown}`,
+          `Coordinates: ${node.latitude && node.longitude ? `${node.latitude}, ${node.longitude}` : unknown}`,
+          `Browser / IP timezone: ${node.timezone || unknown} / ${node.ipTimezone || unknown}`,
+          `Cloudflare colo: ${node.colo || unknown}`,
+          `ASN risk: ${node.asnRisk ? t('erifyGraphYes') : t('erifyGraphNo')}`,
+          `Tor: ${node.tor ? t('erifyGraphYes') : t('erifyGraphNo')}`,
+          `Automation: ${node.automation ? t('erifyGraphYes') : t('erifyGraphNo')}`,
+          `Timezone mismatch: ${node.timezoneMismatch ? t('erifyGraphYes') : t('erifyGraphNo')}`
+        );
+      }
+      tooltip.textContent = details.join('\n');
+    } else {
+      tooltip.textContent = `${node.signalType}: ${node.label}`;
+    }
     group.append(circle, label, tooltip); canvas.append(group);
   });
   search.addEventListener('input', () => {
@@ -925,7 +984,9 @@ function renderErifyRelationshipGraph() {
   });
   page.append(canvas);
   const note = document.createElement('p'); note.className = 'erify-graph-note';
-  note.textContent = `生成日時: ${new Date((graph.generatedAt || 0) * 1000).toLocaleString('ja-JP')}。生IPや端末の生データは含まれません。`;
+  note.textContent = t('erifyGraphGenerated', {
+    date: new Date((graph.generatedAt || 0) * 1000).toLocaleString(state.language === 'en' ? 'en-US' : 'ja-JP')
+  });
   page.append(note); settingsRoot.append(page);
 }
 
