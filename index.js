@@ -187,6 +187,7 @@ const state = {
   categories: {},
   channels: [],
   roles: [],
+  extensions: {},
   definitions: [],
   original: {},
   values: {},
@@ -857,12 +858,88 @@ function activateNavigation() {
   settingsRoot.querySelectorAll('.setting').forEach(row => navigationObserver.observe(row));
 }
 
+function renderErifyRelationshipGraph() {
+  const graph = state.extensions.erify;
+  const page = document.createElement('section');
+  page.className = 'erify-graph-viewer';
+  const heading = document.createElement('div'); heading.className = 'erify-graph-heading';
+  const title = document.createElement('h3'); title.textContent = 'Erify 関連グラフ';
+  const lead = document.createElement('p');
+  lead.textContent = 'ユーザー、端末鍵、ブラウザ識別子、HMAC化ネットワークの関連を表示します。線が複数重なるほど関連性が高い候補です。';
+  heading.append(title, lead);
+  page.append(heading);
+  if (!graph || graph.type !== 'erify-relationship-graph' || !Array.isArray(graph.nodes) || !Array.isArray(graph.edges)) {
+    const empty = document.createElement('p'); empty.textContent = 'Erifyグラフデータがありません。'; page.append(empty); settingsRoot.append(page); return;
+  }
+
+  const nodes = graph.nodes.slice(0, 300);
+  const nodeIds = new Set(nodes.map(node => node.id));
+  const edges = graph.edges.filter(edge => nodeIds.has(edge.source) && nodeIds.has(edge.target)).slice(0, 800);
+  const users = nodes.filter(node => node.kind === 'user');
+  const signals = nodes.filter(node => node.kind === 'signal');
+  const summary = document.createElement('div'); summary.className = 'erify-graph-summary';
+  [['Users', users.length], ['Signals', signals.length], ['Links', edges.length]].forEach(([label, value]) => {
+    const card = document.createElement('div'); card.innerHTML = `<strong>${value}</strong><span>${label}</span>`; summary.append(card);
+  });
+  page.append(summary);
+
+  const search = document.createElement('input');
+  search.type = 'search'; search.className = 'erify-graph-search'; search.placeholder = 'DiscordユーザーIDを検索';
+  page.append(search);
+  const canvas = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  canvas.classList.add('erify-graph-canvas'); canvas.setAttribute('viewBox', '0 0 1420 760');
+  canvas.setAttribute('role', 'img'); canvas.setAttribute('aria-label', 'Erify user relationship graph');
+  const positions = new Map();
+  users.forEach((node, index) => positions.set(node.id, { x: 170, y: 55 + index * Math.max(28, 650 / Math.max(1, users.length)) }));
+  const columns = ['device', 'browser', 'network', 'network-prefix', 'network-context'];
+  signals.forEach((node, index) => {
+    const column = Math.max(0, columns.indexOf(node.signalType));
+    const sameType = signals.filter(item => item.signalType === node.signalType);
+    const typeIndex = sameType.findIndex(item => item.id === node.id);
+    positions.set(node.id, { x: 470 + column * 220, y: 55 + typeIndex * Math.max(24, 650 / Math.max(1, sameType.length)) });
+  });
+  edges.forEach(edge => {
+    const from = positions.get(edge.source); const to = positions.get(edge.target); if (!from || !to) return;
+    const line = document.createElementNS(canvas.namespaceURI, 'line');
+    line.setAttribute('x1', from.x); line.setAttribute('y1', from.y); line.setAttribute('x2', to.x); line.setAttribute('y2', to.y);
+    line.classList.add('erify-graph-edge', `signal-${edge.type}`); line.dataset.source = edge.source; line.dataset.target = edge.target;
+    canvas.append(line);
+  });
+  nodes.forEach(node => {
+    const point = positions.get(node.id); if (!point) return;
+    const group = document.createElementNS(canvas.namespaceURI, 'g'); group.classList.add('erify-graph-node', node.kind); group.dataset.id = node.id;
+    const circle = document.createElementNS(canvas.namespaceURI, 'circle'); circle.setAttribute('cx', point.x); circle.setAttribute('cy', point.y); circle.setAttribute('r', node.kind === 'user' ? 11 : 8);
+    const label = document.createElementNS(canvas.namespaceURI, 'text'); label.setAttribute('x', point.x + 15); label.setAttribute('y', point.y + 4); label.textContent = String(node.label || node.id).slice(0, 28);
+    const tooltip = document.createElementNS(canvas.namespaceURI, 'title');
+    tooltip.textContent = node.kind === 'user'
+      ? `Discord ID: ${node.label}\nDecision: ${node.decision || 'UNKNOWN'}\nScore: ${node.score || 0}\nAccount created: ${node.accountCreatedAt ? new Date(node.accountCreatedAt * 1000).toLocaleString('ja-JP') : 'unknown'}\nASN: ${node.asn || 'unknown'}\nCountry: ${node.country || 'XX'}\nTimezone: ${node.timezone || 'unknown'}`
+      : `${node.signalType}: ${node.label}`;
+    group.append(circle, label, tooltip); canvas.append(group);
+  });
+  search.addEventListener('input', () => {
+    const query = search.value.trim().toLowerCase();
+    const matched = new Set(nodes.filter(node => !query || String(node.label).toLowerCase().includes(query)).map(node => node.id));
+    if (query) edges.forEach(edge => { if (matched.has(edge.source) || matched.has(edge.target)) { matched.add(edge.source); matched.add(edge.target); } });
+    canvas.querySelectorAll('.erify-graph-node').forEach(node => node.classList.toggle('dimmed', query && !matched.has(node.dataset.id)));
+    canvas.querySelectorAll('.erify-graph-edge').forEach(edge => edge.classList.toggle('dimmed', query && !(matched.has(edge.dataset.source) && matched.has(edge.dataset.target))));
+  });
+  page.append(canvas);
+  const note = document.createElement('p'); note.className = 'erify-graph-note';
+  note.textContent = `生成日時: ${new Date((graph.generatedAt || 0) * 1000).toLocaleString('ja-JP')}。生IPや端末の生データは含まれません。`;
+  page.append(note); settingsRoot.append(page);
+}
+
 function render() {
   settingsRoot.replaceChildren();
   navigationRoot.replaceChildren();
   const builder = state.activeTab === 'server-builder' && state.scope === 'GUILD';
+  const erifyGraph = state.activeTab === 'erify-graph' && state.scope === 'GUILD' && state.extensions.erify;
   const guildScope = state.scope === 'GUILD';
-  if (state.scope === 'ADMIN') {
+  if (erifyGraph) {
+    renderErifyRelationshipGraph();
+    document.getElementById('scopeEyebrow').textContent = 'Erify 管理者専用';
+    document.getElementById('sidebarScopeLabel').textContent = 'Relationship Graph';
+  } else if (state.scope === 'ADMIN') {
     renderAdministratorPanelV2();
     document.getElementById('scopeEyebrow').textContent = 'Xross 管理者専用';
     document.getElementById('sidebarScopeLabel').textContent = 'Xross Admin';
@@ -891,11 +968,11 @@ function render() {
   }
 
   editor.classList.remove('hidden');
-  actions.classList.remove('hidden');
+  actions.classList.toggle('hidden', Boolean(erifyGraph));
   settingsRoot.classList.toggle('hidden', builder);
   document.getElementById('pageTop').classList.toggle('hidden', builder);
   serverBuilderPanel.classList.toggle('hidden', !builder);
-  workspaceMode.value = builder ? 'server-builder' : 'settings';
+  workspaceMode.value = erifyGraph ? 'erify-graph' : builder ? 'server-builder' : 'settings';
   workspaceMode.classList.toggle('hidden', state.scope !== 'GUILD');
   document.getElementById('resetButton').textContent = builder ? 'JSONを消去' : t('reset');
   document.getElementById('downloadButton').textContent = builder ? 'ServerBuilderファイルをダウンロード' : t('download');
@@ -1032,10 +1109,12 @@ async function initializeToken(token) {
   state.definitions = payload.d;
   state.channels = Array.isArray(payload.ch) ? payload.ch : [];
   state.roles = Array.isArray(payload.r) ? payload.r : [];
+  state.extensions = payload.x && typeof payload.x === 'object' ? structuredClone(payload.x) : {};
   state.original = structuredClone(payload.v);
   state.values = structuredClone(payload.v);
   state.expiresAt = authorization.e;
   state.initialized = true;
+  document.getElementById('erifyGraphOption').hidden = !state.extensions.erify;
   serverBuilderGuideUrl.textContent = serverBuilderGuideLink();
 
   applyLanguage(payload.i);
@@ -1125,6 +1204,12 @@ function useSettingsTab() {
   render();
 }
 
+function useErifyGraphTab() {
+  if (state.scope !== 'GUILD' || !state.extensions.erify) return;
+  state.activeTab = 'erify-graph';
+  render();
+}
+
 function serverBuilderGuideLink() {
   return new URL('server-builder-guide.md', window.location.href).href;
 }
@@ -1184,6 +1269,7 @@ document.getElementById('copyButton').addEventListener('click', async () => {
 
 workspaceMode.addEventListener('change', () => {
   if (workspaceMode.value === 'server-builder') useServerBuilderTab();
+  else if (workspaceMode.value === 'erify-graph') useErifyGraphTab();
   else useSettingsTab();
 });
 
