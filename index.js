@@ -15,6 +15,7 @@ const I18N = {
     guildScope: 'サーバー設定',
     userScope: 'ユーザー設定',
     noSettingsForScope: 'この対象で利用できる設定はありません。',
+    selectPlugin: '左側から表示するプラグインを選択してください。',
     copy: '適用コマンドをコピー',
     importTitle: 'Editorセッションを手動で読み込む',
     importDescription: 'DiscordのEditor応答に添付されたファイルをここへドロップするか、ファイルを選択してください。',
@@ -46,6 +47,9 @@ const I18N = {
     descriptionChannel: '対象となるDiscordチャンネルをIDで指定します。',
     descriptionRole: '対象となるDiscordロールをIDで指定します。',
     descriptionDefault: 'この設定項目の値を変更します。',
+    durationSeconds: '秒',
+    durationMinutes: '分',
+    durationHours: '時間',
     xrossLanguageLabel: '表示言語',
     xrossLanguageDescription: 'Xross EngineとWebエディターで使用する表示言語です。',
     xrossVoiceVolumeLabel: '音声音量',
@@ -71,6 +75,7 @@ const I18N = {
     integerRequired: '{label}: 整数が必要です。',
     minimumValue: '{label}: 最小値は {value} です。',
     maximumValue: '{label}: 最大値は {value} です。',
+    durationMaximum: '{label}: 最大7日相当まで設定できます。',
     stringRequired: '{label}: 文字列が必要です。',
     minimumLength: '{label}: {value}文字以上必要です。',
     maximumLength: '{label}: {value}文字以内にしてください。',
@@ -139,6 +144,7 @@ const I18N = {
     guildScope: 'Server settings',
     userScope: 'User settings',
     noSettingsForScope: 'No settings are available for this scope.',
+    selectPlugin: 'Select a plugin on the left to show its settings.',
     copy: 'Copy apply command',
     importTitle: 'Import the Editor session manually',
     importDescription: 'Drop the file from the Discord Editor response here, or choose it below.',
@@ -170,6 +176,9 @@ const I18N = {
     descriptionChannel: 'Enter the Discord channel ID to use.',
     descriptionRole: 'Enter the Discord role ID to use.',
     descriptionDefault: 'Change the value of this setting.',
+    durationSeconds: 'Seconds',
+    durationMinutes: 'Minutes',
+    durationHours: 'Hours',
     xrossLanguageLabel: 'Display language',
     xrossLanguageDescription: 'Language used by Xross Engine and the Web Editor.',
     xrossVoiceVolumeLabel: 'Voice volume',
@@ -195,6 +204,7 @@ const I18N = {
     integerRequired: '{label}: an integer is required.',
     minimumValue: '{label}: the minimum value is {value}.',
     maximumValue: '{label}: the maximum value is {value}.',
+    durationMaximum: '{label}: the maximum is 7 days.',
     stringRequired: '{label}: text is required.',
     minimumLength: '{label}: enter at least {value} characters.',
     maximumLength: '{label}: enter no more than {value} characters.',
@@ -266,6 +276,7 @@ const state = {
   original: {},
   values: {},
   collapsedOwners: new Set(),
+  activeOwner: null,
   language: 'ja',
   scope: 'GUILD',
   expiresAt: 0,
@@ -576,6 +587,11 @@ function validateDefinition(definition, value) {
     if (!Number.isInteger(value)) throw new Error(t('integerRequired', { label }));
     if (definition.n != null && value < definition.n) throw new Error(t('minimumValue', { label, value: definition.n }));
     if (definition.x != null && value > definition.x) throw new Error(t('maximumValue', { label, value: definition.x }));
+    const unitKey = durationUnitKey(definition);
+    if (unitKey) {
+      const factor = durationFactor(state.values[unitKey]);
+      if (!factor || value * factor > 604_800) throw new Error(t('durationMaximum', { label }));
+    }
   }
   if (definition.t === 'STRING') {
     if (typeof value !== 'string') throw new Error(t('stringRequired', { label }));
@@ -597,6 +613,9 @@ function validateDefinition(definition, value) {
 function createInput(definition) {
   const value = state.values[definition.k];
   let input;
+
+  const duration = durationInput(definition);
+  if (duration) return duration;
 
   if (definition.t === 'BOOLEAN') {
     const wrapper = document.createElement('label');
@@ -764,6 +783,7 @@ function elementId(prefix, value) {
 function groupedDefinitions() {
   const groups = new Map();
   for (const definition of state.definitions) {
+    if (isDurationUnitDefinition(definition)) continue;
     const owner = ownerFor(definition);
     if (!groups.has(owner)) groups.set(owner, []);
     groups.get(owner).push(definition);
@@ -788,6 +808,66 @@ function switchDescription(type) {
     case 'ROLE': return t('descriptionRole');
     default: return t('descriptionDefault');
   }
+}
+
+const DURATION_UNIT_PAIRS = Object.freeze({
+  'anonymous-send.message-cooldown-hours': 'anonymous-send.message-cooldown-unit',
+  'anonymous-send.forum-cooldown-hours': 'anonymous-send.forum-cooldown-unit'
+});
+const DURATION_UNIT_FACTORS = Object.freeze({ seconds: 1, minutes: 60, hours: 3600 });
+
+function durationUnitKey(definition) {
+  return DURATION_UNIT_PAIRS[definition.k] || null;
+}
+
+function isDurationUnitDefinition(definition) {
+  return Object.values(DURATION_UNIT_PAIRS).includes(definition.k);
+}
+
+function durationFactor(unit) {
+  return DURATION_UNIT_FACTORS[unit] || 0;
+}
+
+function durationUnitLabel(unit) {
+  return t(unit === 'seconds' ? 'durationSeconds' : unit === 'minutes' ? 'durationMinutes' : 'durationHours');
+}
+
+function durationInput(definition) {
+  const unitKey = durationUnitKey(definition);
+  if (!unitKey) return null;
+  const wrapper = document.createElement('div');
+  wrapper.className = 'duration-control';
+  const input = document.createElement('input');
+  input.type = 'number';
+  input.className = 'duration-number';
+  input.step = '1';
+  input.min = String(definition.n == null ? 1 : definition.n);
+  const unit = document.createElement('select');
+  unit.className = 'duration-unit';
+  unit.setAttribute('aria-label', definitionLabel(definition));
+  for (const value of Object.keys(DURATION_UNIT_FACTORS)) {
+    const option = document.createElement('option');
+    option.value = value;
+    option.textContent = durationUnitLabel(value);
+    unit.append(option);
+  }
+  const selectedUnit = DURATION_UNIT_FACTORS[state.values[unitKey]] ? state.values[unitKey] : 'hours';
+  const updateBounds = () => {
+    const factor = durationFactor(unit.value);
+    input.max = String(Math.floor(604_800 / factor));
+  };
+  input.value = state.values[definition.k];
+  unit.value = selectedUnit;
+  updateBounds();
+  input.addEventListener('input', () => {
+    state.values[definition.k] = Number(input.value);
+  });
+  unit.addEventListener('change', () => {
+    state.values[unitKey] = unit.value;
+    updateBounds();
+  });
+  wrapper.append(input, unit);
+  return wrapper;
 }
 
 function createSettingRow(definition) {
@@ -843,6 +923,7 @@ function createNavigationGroup(owner, definitions, name, categoryId) {
   categoryRow.className = 'nav-category-row';
   const categoryLink = document.createElement('a');
   categoryLink.className = 'nav-category';
+  if (state.activeOwner === owner) categoryLink.classList.add('active');
   categoryLink.href = `#${categoryId}`;
   const categoryIcon = document.createElement('span');
   categoryIcon.className = 'nav-category-icon';
@@ -854,6 +935,13 @@ function createNavigationGroup(owner, definitions, name, categoryId) {
   count.className = 'nav-count';
   count.textContent = definitions.length;
   categoryLink.append(categoryIcon, categoryText, count);
+  categoryLink.addEventListener('click', event => {
+    event.preventDefault();
+    if (state.activeOwner === owner) return;
+    state.activeOwner = owner;
+    render();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
 
   const channelsId = elementId('navigation', owner);
   const toggle = document.createElement('button');
@@ -1057,46 +1145,43 @@ function render() {
   settingsRoot.replaceChildren();
   navigationRoot.replaceChildren();
   const builder = state.activeTab === 'server-builder' && state.scope === 'GUILD';
-  const erifyGraph = state.activeTab === 'erify-graph' && state.scope === 'GUILD' && state.extensions.erify;
   const guildScope = state.scope === 'GUILD';
-  if (erifyGraph) {
-    renderErifyRelationshipGraph();
-    document.getElementById('scopeEyebrow').textContent = 'Erify 管理者専用';
-    document.getElementById('sidebarScopeLabel').textContent = state.language === 'en' ? 'Related user search' : '関連ユーザー検索';
-  } else if (state.scope === 'ADMIN') {
+  if (state.scope === 'ADMIN') {
     renderAdministratorPanelV2();
     document.getElementById('scopeEyebrow').textContent = 'Xross 管理者専用';
-    document.getElementById('sidebarScopeLabel').textContent = 'Xross Admin';
   } else if (builder) {
     const builderLink = document.createElement('a');
     builderLink.className = 'nav-channel active'; builderLink.href = '#server-builder-builder'; builderLink.textContent = 'Builder';
     const guideLink = document.createElement('a');
     guideLink.className = 'nav-channel'; guideLink.href = '#server-builder-guide'; guideLink.textContent = 'AIにサーバー構成を作ってもらうためのガイド';
     navigationRoot.append(builderLink, guideLink);
-    document.getElementById('sidebarScopeLabel').textContent = 'ServerBuilder';
   } else {
     createNavigationBase();
     const groups = groupedDefinitions();
+    if (state.activeOwner && !groups.some(([owner]) => owner === state.activeOwner)) state.activeOwner = groups[0]?.[0] || null;
+    if (!state.activeOwner && groups.length > 0) state.activeOwner = groups[0][0];
     for (const [owner, definitions] of groups) {
       const name = categoryName(owner);
       const categoryId = elementId('category', owner);
       navigationRoot.append(createNavigationGroup(owner, definitions, name, categoryId));
-      settingsRoot.append(createCategory(owner, definitions, name, categoryId));
+      if (owner === state.activeOwner) settingsRoot.append(createCategory(owner, definitions, name, categoryId));
     }
     if (groups.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'scope-empty'; empty.textContent = t('noSettingsForScope'); settingsRoot.append(empty);
+    } else if (!state.activeOwner) {
+      const empty = document.createElement('div');
+      empty.className = 'scope-empty'; empty.textContent = t('selectPlugin'); settingsRoot.append(empty);
     }
     document.getElementById('scopeEyebrow').textContent = t(guildScope ? 'serverConfiguration' : 'userScope');
-    document.getElementById('sidebarScopeLabel').textContent = t(guildScope ? 'serverSettings' : 'userScope');
   }
 
   editor.classList.remove('hidden');
-  actions.classList.toggle('hidden', Boolean(erifyGraph));
+  actions.classList.remove('hidden');
   settingsRoot.classList.toggle('hidden', builder);
   document.getElementById('pageTop').classList.toggle('hidden', builder);
   serverBuilderPanel.classList.toggle('hidden', !builder);
-  workspaceMode.value = erifyGraph ? 'erify-graph' : builder ? 'server-builder' : 'settings';
+  workspaceMode.value = builder ? 'server-builder' : 'settings';
   workspaceMode.classList.toggle('hidden', state.scope !== 'GUILD');
   document.getElementById('resetButton').textContent = builder ? '構成データを消去' : t('reset');
   document.getElementById('downloadButton').textContent = builder ? 'ServerBuilderファイルをダウンロード' : t('download');
@@ -1237,8 +1322,10 @@ async function initializeToken(token) {
   state.original = structuredClone(payload.v);
   state.values = structuredClone(payload.v);
   state.expiresAt = authorization.e;
+  const groups = groupedDefinitions();
+  state.collapsedOwners = new Set(groups.map(([owner]) => owner));
+  state.activeOwner = groups[0]?.[0] || null;
   state.initialized = true;
-  document.getElementById('erifyGraphOption').hidden = !state.extensions.erify;
   serverBuilderGuideUrl.textContent = serverBuilderGuideLink();
 
   applyLanguage(payload.i);
@@ -1328,12 +1415,6 @@ function useSettingsTab() {
   render();
 }
 
-function useErifyGraphTab() {
-  if (state.scope !== 'GUILD' || !state.extensions.erify) return;
-  state.activeTab = 'erify-graph';
-  render();
-}
-
 function serverBuilderGuideLink() {
   return new URL('server-builder-guide.md', window.location.href).href;
 }
@@ -1393,7 +1474,6 @@ document.getElementById('copyButton').addEventListener('click', async () => {
 
 workspaceMode.addEventListener('change', () => {
   if (workspaceMode.value === 'server-builder') useServerBuilderTab();
-  else if (workspaceMode.value === 'erify-graph') useErifyGraphTab();
   else useSettingsTab();
 });
 
