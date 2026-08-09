@@ -289,6 +289,18 @@ html[data-theme="dark"] .theme-icon-dark { display: inline; }
   font-weight: 700;
   text-align: center;
 }
+.nav-enabled {
+  width: 28px;
+  height: 30px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.nav-enabled:hover { background: var(--surface-hover); }
+.nav-enabled input { width: 16px; height: 16px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+.nav-group.disabled .nav-category-icon, .nav-group.disabled .nav-category-label { opacity: .55; }
 .nav-toggle {
   width: 30px;
   height: 30px;

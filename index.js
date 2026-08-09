@@ -628,6 +628,7 @@ function createInput(definition) {
     input.addEventListener('change', () => {
       state.values[definition.k] = input.checked;
       text.textContent = input.checked ? t('enabled') : t('disabled');
+      if (definition.k === `${ownerFor(definition)}.enabled`) render();
     });
     wrapper.append(input, text);
     return wrapper;
@@ -918,6 +919,9 @@ function createNavigationGroup(owner, definitions, name, categoryId) {
   navGroup.className = 'nav-group';
   navGroup.dataset.owner = owner;
   if (state.collapsedOwners.has(owner)) navGroup.classList.add('collapsed');
+  const enabledDefinition = definitions.find(definition =>
+    definition.t === 'BOOLEAN' && definition.k === `${owner}.enabled`);
+  if (enabledDefinition && !state.values[enabledDefinition.k]) navGroup.classList.add('disabled');
 
   const categoryRow = document.createElement('div');
   categoryRow.className = 'nav-category-row';
@@ -958,7 +962,23 @@ function createNavigationGroup(owner, definitions, name, categoryId) {
     toggle.setAttribute('aria-expanded', String(!collapsed));
     toggle.setAttribute('aria-label', t(collapsed ? 'expandCategory' : 'collapseCategory', { name }));
   });
-  categoryRow.append(categoryLink, toggle);
+  categoryRow.append(categoryLink);
+  if (enabledDefinition) {
+    const enabled = document.createElement('label');
+    enabled.className = 'nav-enabled';
+    enabled.title = `${name}: ${state.values[enabledDefinition.k] ? t('enabled') : t('disabled')}`;
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = Boolean(state.values[enabledDefinition.k]);
+    checkbox.setAttribute('aria-label', enabled.title);
+    checkbox.addEventListener('change', () => {
+      state.values[enabledDefinition.k] = checkbox.checked;
+      render();
+    });
+    enabled.append(checkbox);
+    categoryRow.append(enabled);
+  }
+  categoryRow.append(toggle);
 
   const channels = document.createElement('div');
   channels.id = channelsId;
