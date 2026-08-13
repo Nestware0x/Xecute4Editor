@@ -17,6 +17,6 @@ The Editor includes only settings changed from the values loaded by `/editor` in
 
 PNG attachment transport is mandatory. The Bot refuses to create an Editor session when the transport or its private channel is not configured.
 
-The Editor language is fixed when `/editor` creates the server session: it uses that guild's Xross display-language setting. Only that language's label and description are included in the session; the browser contains no plugin-specific text. Plugins can provide localized setting metadata with `label("ja", ...)`, `label("en", ...)`, `description("ja", ...)`, and `description("en", ...)` on `GuildSettingDefinition.Builder`.
+The Editor language is fixed when `/editor` creates the server session: it uses that guild's Xross display-language setting. Only that language's label and description are included in the session. Plugins normally provide localized setting metadata with `label("ja", ...)`, `label("en", ...)`, `description("ja", ...)`, and `description("en", ...)` on `GuildSettingDefinition.Builder`. Bumping is the intentional exception: its two versioned JSON STRING settings use a dedicated localized service-card renderer, without adding a platform-wide setting type.
 
 Server sessions also include the current guild channel and role cache. `CHANNEL` and `ROLE` settings are rendered as drop-down lists showing name and ID, so administrators do not need to copy IDs. The list is gathered from the `/editor` interaction's guild object and does not issue a separate REST request or select a shard.

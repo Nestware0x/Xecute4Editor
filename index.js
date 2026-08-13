@@ -29,6 +29,7 @@ const I18N = {
     switchDark: 'ダークモードに切り替える',
     enabled: '有効',
     disabled: '無効',
+    partnerRequired: 'Xecute Partner Program認定済みのサーバー管理者のみ有効化できます。',
     system: 'システム',
     overview: '概要',
     collapseCategory: '{name}カテゴリーを折りたたむ',
@@ -41,6 +42,30 @@ const I18N = {
     notSelected: '選択しない',
     unavailableSelection: '現在は利用できない選択肢',
     multiSelectDone: '完了',
+    bumpingAutomatic: '自動検知候補（要コマンドID確認）',
+    bumpingManual: '手動タイマープリセット',
+    bumpingCustom: '自由登録サービス',
+    bumpingAdd: 'サービスを追加',
+    bumpingRemove: '削除',
+    bumpingName: '表示名',
+    bumpingEnabled: '監視する',
+    bumpingDetection: '検知方式',
+    bumpingCommandResponse: '公開コマンド応答',
+    bumpingSuccessResponse: '成功応答を確認（実験的）',
+    bumpingManualOnly: '手動タイマーのみ',
+    bumpingCooldown: '通知周期（分）',
+    bumpingApplicationId: 'Application / Bot ID',
+    bumpingCommandPath: 'コマンドパス',
+    bumpingCommandId: 'コマンドID',
+    bumpingCommandHelp: 'コマンドIDを設定すると、通知にクリックできる巨大な実コマンドメンションを表示します。',
+    bumpingSuccessPhrases: '成功判定語（1行に1件）',
+    bumpingActionUrl: 'サービスURL',
+    bumpingNextAt: '次回通知日時',
+    bumpingPaused: '一時停止',
+    bumpingNotScheduled: '未設定',
+    bumpingInvalidConfig: 'Bumpingのサービス設定が壊れています。',
+    bumpingCustomLimit: '自由登録サービスは20件までです。',
+    bumpingChannelRequired: 'Bumpingを有効にする場合は、bump/up専用チャンネルを選択してください。',
     descriptionBoolean: 'この機能の有効・無効を切り替えます。',
     descriptionInteger: 'この設定で使用する数値を指定します。',
     descriptionSelect: '利用する値を一覧から選択します。',
@@ -158,6 +183,7 @@ const I18N = {
     switchDark: 'Switch to dark mode',
     enabled: 'Enabled',
     disabled: 'Disabled',
+    partnerRequired: 'Only a server manager certified by the Xecute Partner Program can enable this feature.',
     system: 'System',
     overview: 'Overview',
     collapseCategory: 'Collapse the {name} category',
@@ -170,6 +196,30 @@ const I18N = {
     notSelected: 'Do not select',
     unavailableSelection: 'Currently unavailable selection',
     multiSelectDone: 'Done',
+    bumpingAutomatic: 'Auto-detection candidates (verification required)',
+    bumpingManual: 'Manual timer presets',
+    bumpingCustom: 'Custom services',
+    bumpingAdd: 'Add service',
+    bumpingRemove: 'Remove',
+    bumpingName: 'Display name',
+    bumpingEnabled: 'Monitor',
+    bumpingDetection: 'Detection mode',
+    bumpingCommandResponse: 'Public command response',
+    bumpingSuccessResponse: 'Confirm success response (experimental)',
+    bumpingManualOnly: 'Manual timer only',
+    bumpingCooldown: 'Reminder interval (minutes)',
+    bumpingApplicationId: 'Application / Bot ID',
+    bumpingCommandPath: 'Command path',
+    bumpingCommandId: 'Command ID',
+    bumpingCommandHelp: 'Set the command ID to show a large clickable command mention in reminders.',
+    bumpingSuccessPhrases: 'Success phrases (one per line)',
+    bumpingActionUrl: 'Service URL',
+    bumpingNextAt: 'Next reminder',
+    bumpingPaused: 'Paused',
+    bumpingNotScheduled: 'Not scheduled',
+    bumpingInvalidConfig: 'The Bumping service configuration is invalid.',
+    bumpingCustomLimit: 'You can register up to 20 custom services.',
+    bumpingChannelRequired: 'Select a bump/up channel before enabling Bumping.',
     descriptionBoolean: 'Enable or disable this feature.',
     descriptionInteger: 'Enter the number used by this setting.',
     descriptionSelect: 'Choose a value from the list.',
@@ -608,6 +658,51 @@ function validateDefinition(definition, value) {
       && (typeof value !== 'string' || !value.split(',').every(id => id.trim() === '' || /^[1-9][0-9]{5,24}(?::(?:true|false))?$/.test(id.trim())))) {
     throw new Error(t('discordIdRequired', { label }));
   }
+  if (definition.k === BUMPING_CONFIG_KEY) validateBumpingSettings();
+}
+
+function validateBumpingSettings() {
+  const model = parseBumpingState();
+  if (!model) throw new Error(t('bumpingInvalidConfig'));
+  const ids = new Set();
+  let customCount = 0;
+  for (const service of model.config.services) {
+    if (!service || !/^[a-z0-9][a-z0-9-]{0,39}$/.test(service.id || '') || ids.has(service.id)) {
+      throw new Error(t('bumpingInvalidConfig'));
+    }
+    ids.add(service.id);
+    if (!service.builtIn && ++customCount > 20) throw new Error(t('bumpingCustomLimit'));
+    if (typeof service.name !== 'string' || !service.name.trim() || service.name.length > 80) throw new Error(t('bumpingInvalidConfig'));
+    if (!['COMMAND_RESPONSE', 'SUCCESS_RESPONSE', 'MANUAL'].includes(service.detectionMode)) throw new Error(t('bumpingInvalidConfig'));
+    if (!Number.isInteger(service.cooldownMinutes) || service.cooldownMinutes < 1 || service.cooldownMinutes > 10080) {
+      throw new Error(t('bumpingInvalidConfig'));
+    }
+    for (const snowflake of [service.applicationId, service.commandId]) {
+      if (snowflake && !/^[1-9][0-9]{5,24}$/.test(snowflake)) throw new Error(t('bumpingInvalidConfig'));
+    }
+    if (service.detectionMode !== 'MANUAL' && (!service.applicationId || !service.commandPath || !service.commandId)) {
+      throw new Error(t('bumpingInvalidConfig'));
+    }
+    const phrases = Array.isArray(service.successPhrases) ? service.successPhrases : [];
+    if (phrases.length > 10 || phrases.some(phrase => typeof phrase !== 'string' || !phrase.trim() || phrase.length > 120)) {
+      throw new Error(t('bumpingInvalidConfig'));
+    }
+    if (service.detectionMode === 'SUCCESS_RESPONSE' && phrases.length === 0) throw new Error(t('bumpingInvalidConfig'));
+    if (service.actionUrl) {
+      try {
+        const url = new URL(service.actionUrl);
+        if (!['http:', 'https:'].includes(url.protocol)) throw new Error();
+      } catch (error) {
+        throw new Error(t('bumpingInvalidConfig'));
+      }
+    }
+  }
+  for (const [id, schedule] of Object.entries(model.schedules.items)) {
+    if (!/^[a-z0-9][a-z0-9-]{0,39}$/.test(id) || !schedule || !Number.isFinite(schedule.nextAt)
+        || schedule.nextAt < 0 || typeof schedule.paused !== 'boolean') {
+      throw new Error(t('bumpingInvalidConfig'));
+    }
+  }
 }
 
 function createInput(definition) {
@@ -623,12 +718,14 @@ function createInput(definition) {
     input = document.createElement('input');
     input.type = 'checkbox';
     input.checked = Boolean(value);
+    input.disabled = enableRequiresPartner(definition);
+    if (input.disabled) input.title = t('partnerRequired');
     const text = document.createElement('span');
     text.textContent = input.checked ? t('enabled') : t('disabled');
     input.addEventListener('change', () => {
       state.values[definition.k] = input.checked;
       text.textContent = input.checked ? t('enabled') : t('disabled');
-      if (definition.k === `${ownerFor(definition)}.enabled`) render();
+      if (isEnabledDefinition(definition)) render();
     });
     wrapper.append(input, text);
     return wrapper;
@@ -769,6 +866,18 @@ function ownerFor(definition) {
   return separator > 0 ? definition.k.slice(0, separator) : 'xross';
 }
 
+function isEnabledDefinition(definition, owner = ownerFor(definition)) {
+  if (definition.t !== 'BOOLEAN') return false;
+  const key = String(definition.k || '').toLowerCase();
+  return key === `${owner}.enabled` || /(?:^|[._-])enable(?:d)?$/.test(key);
+}
+
+function enableRequiresPartner(definition) {
+  return definition.k === 'ai-report.enabled'
+    && state.extensions['ai-report-access']?.canEnable !== true
+    && !state.values[definition.k];
+}
+
 function categoryName(owner) {
   if (owner === 'xross') return t('system');
   if (state.categories[owner]) return state.categories[owner];
@@ -784,10 +893,13 @@ function elementId(prefix, value) {
 function groupedDefinitions() {
   const groups = new Map();
   for (const definition of state.definitions) {
-    if (isDurationUnitDefinition(definition)) continue;
+    if (isDurationUnitDefinition(definition) || isBumpingBackingDefinition(definition)) continue;
     const owner = ownerFor(definition);
     if (!groups.has(owner)) groups.set(owner, []);
     groups.get(owner).push(definition);
+  }
+  for (const [owner, definitions] of groups) {
+    definitions.sort((left, right) => Number(isEnabledDefinition(right, owner)) - Number(isEnabledDefinition(left, owner)));
   }
   return [...groups.entries()].sort(([left], [right]) => {
     if (left === 'xross') return -1;
@@ -816,6 +928,8 @@ const DURATION_UNIT_PAIRS = Object.freeze({
   'anonymous-send.forum-cooldown-hours': 'anonymous-send.forum-cooldown-unit'
 });
 const DURATION_UNIT_FACTORS = Object.freeze({ seconds: 1, minutes: 60, hours: 3600 });
+const BUMPING_CONFIG_KEY = 'bumping.service-config';
+const BUMPING_SCHEDULE_KEY = 'bumping.manual-schedules';
 
 function durationUnitKey(definition) {
   return DURATION_UNIT_PAIRS[definition.k] || null;
@@ -831,6 +945,253 @@ function durationFactor(unit) {
 
 function durationUnitLabel(unit) {
   return t(unit === 'seconds' ? 'durationSeconds' : unit === 'minutes' ? 'durationMinutes' : 'durationHours');
+}
+
+function isBumpingBackingDefinition(definition) {
+  return definition.k === BUMPING_SCHEDULE_KEY;
+}
+
+function parseBumpingState() {
+  try {
+    const config = JSON.parse(state.values[BUMPING_CONFIG_KEY]);
+    const schedules = JSON.parse(state.values[BUMPING_SCHEDULE_KEY]);
+    if (config?.v !== 1 || !Array.isArray(config.services) || schedules?.v !== 1 || !schedules.items || typeof schedules.items !== 'object') {
+      throw new Error(t('bumpingInvalidConfig'));
+    }
+    return { config, schedules };
+  } catch (error) {
+    return null;
+  }
+}
+
+function storeBumpingState(model) {
+  state.values[BUMPING_CONFIG_KEY] = JSON.stringify(model.config);
+  state.values[BUMPING_SCHEDULE_KEY] = JSON.stringify(model.schedules);
+}
+
+function bumpingLocalDate(epochMillis) {
+  if (!epochMillis) return '';
+  const date = new Date(Number(epochMillis));
+  if (!Number.isFinite(date.getTime())) return '';
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+}
+
+function bumpingField(labelText, control, helpText = '') {
+  const field = document.createElement('label');
+  field.className = 'bumping-field';
+  const label = document.createElement('span');
+  label.textContent = labelText;
+  field.append(label, control);
+  if (helpText) {
+    const help = document.createElement('small');
+    help.textContent = helpText;
+    field.append(help);
+  }
+  return field;
+}
+
+function bumpingTextInput(value, update, options = {}) {
+  const input = document.createElement(options.multiline ? 'textarea' : 'input');
+  if (!options.multiline) input.type = options.type || 'text';
+  if (options.multiline) input.rows = options.rows || 3;
+  input.value = value == null ? '' : String(value);
+  if (options.min != null) input.min = String(options.min);
+  if (options.max != null) input.max = String(options.max);
+  if (options.placeholder) input.placeholder = options.placeholder;
+  input.addEventListener(options.type === 'datetime-local' ? 'change' : 'input', () => update(input.value));
+  return input;
+}
+
+function createBumpingServiceCard(service, model) {
+  const card = document.createElement('article');
+  card.className = 'bumping-service-card';
+  const header = document.createElement('header');
+  header.className = 'bumping-service-header';
+  const identity = document.createElement('div');
+  const title = document.createElement('strong');
+  title.textContent = service.name || service.id;
+  const id = document.createElement('code');
+  id.textContent = service.id;
+  identity.append(title, id);
+  const enabled = document.createElement('label');
+  enabled.className = 'bumping-check';
+  const enabledInput = document.createElement('input');
+  enabledInput.type = 'checkbox';
+  enabledInput.checked = service.enabled !== false;
+  const enabledText = document.createElement('span');
+  enabledText.textContent = t('bumpingEnabled');
+  enabledInput.addEventListener('change', () => {
+    service.enabled = enabledInput.checked;
+    storeBumpingState(model);
+  });
+  enabled.append(enabledInput, enabledText);
+  header.append(identity, enabled);
+
+  const fields = document.createElement('div');
+  fields.className = 'bumping-fields';
+  fields.append(bumpingField(t('bumpingName'), bumpingTextInput(service.name, value => {
+    service.name = value.trim();
+    title.textContent = service.name || service.id;
+    storeBumpingState(model);
+  })));
+
+  const detection = document.createElement('select');
+  [
+    ['COMMAND_RESPONSE', t('bumpingCommandResponse')],
+    ['SUCCESS_RESPONSE', t('bumpingSuccessResponse')],
+    ['MANUAL', t('bumpingManualOnly')]
+  ].forEach(([value, label]) => {
+    const option = document.createElement('option');
+    option.value = value;
+    option.textContent = label;
+    detection.append(option);
+  });
+  detection.value = service.detectionMode || 'MANUAL';
+  detection.addEventListener('change', () => {
+    service.detectionMode = detection.value;
+    storeBumpingState(model);
+    successField.classList.toggle('hidden', detection.value !== 'SUCCESS_RESPONSE');
+  });
+  fields.append(bumpingField(t('bumpingDetection'), detection));
+
+  const cooldown = bumpingTextInput(service.cooldownMinutes || 120, value => {
+    service.cooldownMinutes = Number(value);
+    storeBumpingState(model);
+  }, { type: 'number', min: 1, max: 10080 });
+  fields.append(bumpingField(t('bumpingCooldown'), cooldown));
+
+  fields.append(bumpingField(t('bumpingApplicationId'), bumpingTextInput(service.applicationId, value => {
+    service.applicationId = value.trim();
+    storeBumpingState(model);
+  })));
+  fields.append(bumpingField(t('bumpingCommandPath'), bumpingTextInput(service.commandPath, value => {
+    service.commandPath = value.trim().replace(/^\//, '');
+    storeBumpingState(model);
+  })));
+  fields.append(bumpingField(t('bumpingCommandId'), bumpingTextInput(service.commandId, value => {
+    service.commandId = value.trim();
+    storeBumpingState(model);
+  }), t('bumpingCommandHelp')));
+  fields.append(bumpingField(t('bumpingActionUrl'), bumpingTextInput(service.actionUrl, value => {
+    service.actionUrl = value.trim();
+    storeBumpingState(model);
+  })));
+
+  const successInput = bumpingTextInput((service.successPhrases || []).join('\n'), value => {
+    service.successPhrases = value.split(/\r?\n/).map(item => item.trim()).filter(Boolean).slice(0, 10);
+    storeBumpingState(model);
+  }, { multiline: true, rows: 3 });
+  const successField = bumpingField(t('bumpingSuccessPhrases'), successInput);
+  successField.classList.toggle('hidden', detection.value !== 'SUCCESS_RESPONSE');
+  fields.append(successField);
+
+  if (!model.schedules.items[service.id]) model.schedules.items[service.id] = { nextAt: 0, paused: false };
+  const schedule = model.schedules.items[service.id];
+  const nextAt = bumpingTextInput(bumpingLocalDate(schedule.nextAt), value => {
+    schedule.nextAt = value ? new Date(value).getTime() : 0;
+    storeBumpingState(model);
+  }, { type: 'datetime-local' });
+  fields.append(bumpingField(t('bumpingNextAt'), nextAt, t('bumpingNotScheduled')));
+
+  const paused = document.createElement('label');
+  paused.className = 'bumping-check bumping-pause';
+  const pausedInput = document.createElement('input');
+  pausedInput.type = 'checkbox';
+  pausedInput.checked = schedule.paused === true;
+  pausedInput.addEventListener('change', () => {
+    schedule.paused = pausedInput.checked;
+    storeBumpingState(model);
+  });
+  const pausedText = document.createElement('span');
+  pausedText.textContent = t('bumpingPaused');
+  paused.append(pausedInput, pausedText);
+  fields.append(paused);
+
+  card.append(header, fields);
+  if (!service.builtIn) {
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'bumping-remove';
+    remove.textContent = t('bumpingRemove');
+    remove.addEventListener('click', () => {
+      model.config.services = model.config.services.filter(item => item !== service);
+      delete model.schedules.items[service.id];
+      storeBumpingState(model);
+      render();
+    });
+    card.append(remove);
+  }
+  return card;
+}
+
+function createBumpingServiceEditor(definition) {
+  const row = document.createElement('div');
+  row.id = elementId('setting', definition.k);
+  row.className = 'setting bumping-editor';
+  const title = document.createElement('div');
+  title.className = 'setting-title';
+  title.textContent = definitionLabel(definition);
+  const description = document.createElement('div');
+  description.className = 'setting-description';
+  description.textContent = settingDescription(definition);
+  const key = document.createElement('div');
+  key.className = 'setting-key';
+  key.textContent = definition.k;
+  row.append(title, description, key);
+
+  const model = parseBumpingState();
+  if (!model) {
+    const invalid = document.createElement('p');
+    invalid.className = 'bumping-invalid';
+    invalid.textContent = t('bumpingInvalidConfig');
+    row.append(invalid);
+    return row;
+  }
+
+  const groups = [
+    [t('bumpingAutomatic'), service => service.builtIn && service.tier === 'AUTOMATIC'],
+    [t('bumpingManual'), service => service.builtIn && service.tier === 'MANUAL'],
+    [t('bumpingCustom'), service => !service.builtIn]
+  ];
+  const body = document.createElement('div');
+  body.className = 'bumping-groups';
+  groups.forEach(([label, predicate]) => {
+    const group = document.createElement('section');
+    group.className = 'bumping-group';
+    const heading = document.createElement('h4');
+    heading.textContent = label;
+    const cards = document.createElement('div');
+    cards.className = 'bumping-service-grid';
+    model.config.services.filter(predicate).forEach(service => cards.append(createBumpingServiceCard(service, model)));
+    group.append(heading, cards);
+    if (label === t('bumpingCustom')) {
+      const add = document.createElement('button');
+      add.type = 'button';
+      add.className = 'bumping-add';
+      add.textContent = t('bumpingAdd');
+      add.addEventListener('click', () => {
+        const customs = model.config.services.filter(service => !service.builtIn);
+        if (customs.length >= 20) {
+          showMessage(t('bumpingCustomLimit'), 'error');
+          return;
+        }
+        let sequence = Date.now().toString(36);
+        while (model.config.services.some(service => service.id === `custom-${sequence}`)) sequence += 'x';
+        model.config.services.push({
+          id: `custom-${sequence}`, name: 'Custom service', tier: 'MANUAL', builtIn: false,
+          enabled: true, detectionMode: 'MANUAL', applicationId: '', commandPath: '', commandId: '',
+          cooldownMinutes: 120, successPhrases: [], actionUrl: ''
+        });
+        storeBumpingState(model);
+        render();
+      });
+      group.append(add);
+    }
+    body.append(group);
+  });
+  storeBumpingState(model);
+  row.append(body);
+  return row;
 }
 
 function durationInput(definition) {
@@ -872,6 +1233,7 @@ function durationInput(definition) {
 }
 
 function createSettingRow(definition) {
+  if (definition.k === BUMPING_CONFIG_KEY) return createBumpingServiceEditor(definition);
   const row = document.createElement('div');
   const rowId = elementId('setting', definition.k);
   row.id = rowId;
@@ -919,8 +1281,7 @@ function createNavigationGroup(owner, definitions, name, categoryId) {
   navGroup.className = 'nav-group';
   navGroup.dataset.owner = owner;
   if (state.collapsedOwners.has(owner)) navGroup.classList.add('collapsed');
-  const enabledDefinition = definitions.find(definition =>
-    definition.t === 'BOOLEAN' && definition.k === `${owner}.enabled`);
+  const enabledDefinition = definitions.find(definition => isEnabledDefinition(definition, owner));
   if (enabledDefinition && !state.values[enabledDefinition.k]) navGroup.classList.add('disabled');
 
   const categoryRow = document.createElement('div');
@@ -970,6 +1331,8 @@ function createNavigationGroup(owner, definitions, name, categoryId) {
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
     checkbox.checked = Boolean(state.values[enabledDefinition.k]);
+    checkbox.disabled = enableRequiresPartner(enabledDefinition);
+    if (checkbox.disabled) enabled.title = t('partnerRequired');
     checkbox.setAttribute('aria-label', enabled.title);
     checkbox.addEventListener('change', () => {
       state.values[enabledDefinition.k] = checkbox.checked;
@@ -1393,6 +1756,9 @@ async function initialize() {
 }
 
 function collectChangedValues() {
+  if (state.values['bumping.enabled'] === true && (!state.values['bumping.channel'] || state.values['bumping.channel'] === '0')) {
+    throw new Error(t('bumpingChannelRequired'));
+  }
   const changes = {};
   for (const definition of state.definitions) {
     const value = state.values[definition.k];

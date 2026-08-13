@@ -395,7 +395,7 @@ html[data-theme="dark"] .theme-icon-dark { display: inline; }
 .duration-control { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
 .duration-control .duration-number { flex: 1 1 auto; min-width: 0; margin-top: 0; }
 .duration-control .duration-unit { flex: 0 0 9rem; width: auto; margin-top: 0; }
-input[type="text"], input[type="number"], select, textarea {
+input[type="text"], input[type="number"], input[type="datetime-local"], select, textarea {
   width: 100%;
   min-height: 42px;
   padding: 9px 11px;
@@ -423,6 +423,35 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); backgro
   cursor: pointer;
 }
 .switch input { width: 18px; height: 18px; accent-color: var(--accent); }
+.bumping-editor { padding-bottom: 36px; }
+.bumping-groups { display: grid; gap: 30px; margin-top: 22px; }
+.bumping-group { display: grid; gap: 12px; }
+.bumping-group h4 { margin: 0; color: var(--text); font-size: 15px; }
+.bumping-service-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.bumping-service-card {
+  min-width: 0;
+  display: grid;
+  gap: 15px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface-soft) 72%, transparent);
+}
+.bumping-service-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.bumping-service-header > div { min-width: 0; display: grid; gap: 4px; }
+.bumping-service-header strong { overflow-wrap: anywhere; color: var(--text); font-size: 14px; }
+.bumping-service-header code { overflow: hidden; color: var(--faint); font-size: 10px; text-overflow: ellipsis; }
+.bumping-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.bumping-field { min-width: 0; display: grid; align-content: start; gap: 6px; color: var(--text); font-size: 11px; font-weight: 650; }
+.bumping-field > small { color: var(--faint); font-size: 10px; font-weight: 400; line-height: 1.4; }
+.bumping-field textarea { min-height: 82px; }
+.bumping-field.hidden { display: none; }
+.bumping-check { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 11px; white-space: nowrap; }
+.bumping-check input { width: 16px; height: 16px; accent-color: var(--accent); }
+.bumping-pause { align-self: end; min-height: 42px; padding: 0 10px; border: 1px solid var(--border-strong); border-radius: 7px; }
+.bumping-add, .bumping-remove { justify-self: start; }
+.bumping-remove { color: var(--danger); }
+.bumping-invalid { margin: 18px 0 0; padding: 12px; border: 1px solid var(--danger); border-radius: 8px; color: var(--danger); }
 .entity-multi-combo { width: 100%; }
 .entity-multi-toggle {
   position: relative;
@@ -526,6 +555,7 @@ button.primary:hover { border-color: var(--accent-hover); background: var(--acce
   .nav-group + .nav-group { margin-top: 0; }
   .content { width: 100%; }
   .notice { width: 100%; margin-left: 0; }
+  .bumping-service-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 650px) {
@@ -538,6 +568,7 @@ button.primary:hover { border-color: var(--accent-hover); background: var(--acce
   .category-total { display: none; }
   .setting { padding-right: 0; padding-left: 0; }
   .duration-control .duration-unit { flex-basis: 8rem; }
+  .bumping-fields { grid-template-columns: 1fr; }
   .actions { right: 12px; bottom: 12px; min-width: calc(100% - 24px); }
   .button-row { width: 100%; }
   .button-row button { flex: 1; }
