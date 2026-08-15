@@ -648,6 +648,9 @@ function validateDefinition(definition, value) {
     if (definition.n != null && value.length < definition.n) throw new Error(t('minimumLength', { label, value: definition.n }));
     if (definition.x != null && value.length > definition.x) throw new Error(t('maximumLength', { label, value: definition.x }));
   }
+  if (definition.t === 'SECRET' && typeof value !== 'string') {
+    throw new Error(t('stringRequired', { label }));
+  }
   if (definition.t === 'SELECT' && !(definition.c || []).some(choice => choice.v === value)) {
     throw new Error(t('invalidSelection', { label }));
   }
@@ -711,6 +714,30 @@ function createInput(definition) {
 
   const duration = durationInput(definition);
   if (duration) return duration;
+
+  if (definition.t === 'SECRET') {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'secret-input';
+    input = document.createElement('input');
+    input.type = 'password';
+    input.autocomplete = 'new-password';
+    input.placeholder = state.language === 'en' ? 'Leave blank to keep the current secret' : '空欄のままなら現在の値を維持します';
+    const clear = document.createElement('button');
+    clear.type = 'button';
+    clear.textContent = state.language === 'en' ? 'Clear saved secret' : '保存済みキーを削除';
+    const status = document.createElement('small');
+    input.addEventListener('input', () => {
+      state.values[definition.k] = input.value;
+      status.textContent = '';
+    });
+    clear.addEventListener('click', () => {
+      input.value = '';
+      state.values[definition.k] = '__XROSS_CLEAR_SECRET__';
+      status.textContent = state.language === 'en' ? 'The saved secret will be cleared on apply.' : '適用時に保存済みキーを削除します。';
+    });
+    wrapper.append(input, clear, status);
+    return wrapper;
+  }
 
   if (definition.t === 'BOOLEAN') {
     const wrapper = document.createElement('label');
@@ -874,6 +901,7 @@ function isEnabledDefinition(definition, owner = ownerFor(definition)) {
 
 function enableRequiresPartner(definition) {
   return definition.k === 'ai-report.enabled'
+    && (!state.values['ai-report.provider'] || state.values['ai-report.provider'] === 'internal')
     && state.extensions['ai-report-access']?.canEnable !== true
     && !state.values[definition.k];
 }
