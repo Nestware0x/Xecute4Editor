@@ -57,7 +57,7 @@ const I18N = {
     bumpingApplicationId: 'Application / Bot ID',
     bumpingCommandPath: 'コマンドパス',
     bumpingCommandId: 'コマンドID',
-    bumpingCommandHelp: 'コマンドIDを設定すると、通知にクリックできる巨大な実コマンドメンションを表示します。',
+    bumpingCommandHelp: 'コマンドIDを設定すると、通知にクリックできる実コマンドメンションを大量に表示します。',
     bumpingSuccessPhrases: '成功判定語（1行に1件）',
     bumpingActionUrl: 'サービスURL',
     bumpingNextAt: '次回通知日時',
@@ -211,7 +211,7 @@ const I18N = {
     bumpingApplicationId: 'Application / Bot ID',
     bumpingCommandPath: 'Command path',
     bumpingCommandId: 'Command ID',
-    bumpingCommandHelp: 'Set the command ID to show a large clickable command mention in reminders.',
+    bumpingCommandHelp: 'Set the command ID to fill reminders with clickable command mentions.',
     bumpingSuccessPhrases: 'Success phrases (one per line)',
     bumpingActionUrl: 'Service URL',
     bumpingNextAt: 'Next reminder',
@@ -1184,13 +1184,14 @@ function createBumpingServiceEditor(definition) {
   const body = document.createElement('div');
   body.className = 'bumping-groups';
   groups.forEach(([label, predicate]) => {
-    const group = document.createElement('section');
+    const services = model.config.services.filter(predicate);
+    const group = document.createElement('details');
     group.className = 'bumping-group';
-    const heading = document.createElement('h4');
-    heading.textContent = label;
+    const heading = document.createElement('summary');
+    heading.textContent = `${label} (${services.length})`;
     const cards = document.createElement('div');
     cards.className = 'bumping-service-grid';
-    model.config.services.filter(predicate).forEach(service => cards.append(createBumpingServiceCard(service, model)));
+    services.forEach(service => cards.append(createBumpingServiceCard(service, model)));
     group.append(heading, cards);
     if (label === t('bumpingCustom')) {
       const add = document.createElement('button');
