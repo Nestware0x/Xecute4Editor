@@ -7,87 +7,10 @@
   <meta name="color-scheme" content="light dark">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; script-src 'self'; img-src data:; base-uri 'none'; form-action 'none'; connect-src https://cdn.discordapp.com https://media.discordapp.net">
   <title>Xecute Editor 4</title>
-  <link rel="stylesheet" href="index.css">
-  <script src="index.js" defer></script>
+  <script type="module" crossorigin src="./assets/index-DfXuOaah.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-DKG5FKEP.css">
 </head>
 <body>
-  <main class="shell">
-    <header class="brand">
-      <div class="logo">X</div>
-      <div>
-        <h1>Xecute Editor 4</h1>
-      </div>
-      <label class="workspace-mode-label" for="workspaceMode">Tool</label>
-      <select id="workspaceMode" class="workspace-mode" aria-label="Editor tool">
-        <option value="settings">Settings</option>
-        <option value="server-builder">ServerBuilder</option>
-      </select>
-      <div class="brand-status">
-        <button id="themeToggle" class="theme-toggle" type="button" aria-label="ダークモードに切り替える" aria-pressed="false">
-          <span class="theme-icon theme-icon-light" aria-hidden="true">☀</span>
-          <span class="theme-icon theme-icon-dark" aria-hidden="true">☾</span>
-          <span id="themeLabel">ライト</span>
-        </button>
-      </div>
-    </header>
-
-    <div id="message" class="notice hidden" role="status" aria-live="polite"></div>
-    <section id="importPanel" class="import-panel hidden" aria-labelledby="importTitle">
-      <div class="import-icon" aria-hidden="true">⇧</div>
-      <div class="import-copy">
-        <h2 id="importTitle" data-i18n="importTitle">Editorセッションを手動で読み込む</h2>
-        <p data-i18n="importDescription">DiscordのEditor応答に添付されたファイルをここへドロップするか、ファイルを選択してください。</p>
-        <div id="dropZone" class="drop-zone" tabindex="0" role="button" data-i18n="dropZone">Editorファイルをドロップ</div>
-      </div>
-      <button id="chooseSessionButton" type="button" data-i18n="chooseSession">ファイルを選択</button>
-      <input id="sessionFileInput" class="hidden" type="file" accept=".png,image/png">
-    </section>
-    <section id="editor" class="workspace hidden">
-      <aside class="sidebar">
-        <div class="server-summary">
-          <div id="serverInitial" class="server-icon">D</div>
-          <div class="server-text">
-            <div id="sidebarGuildName" class="server-name">Discord Server</div>
-            <div class="server-label" data-i18n="xecuteSettings">Xecute 設定</div>
-          </div>
-        </div>
-        <nav id="navigation" class="navigation" aria-label="設定一覧"></nav>
-      </aside>
-
-      <div class="content">
-        <header id="pageTop" class="hero">
-          <div id="scopeEyebrow" class="eyebrow" data-i18n="serverConfiguration">サーバー設定</div>
-          <h2 id="guildName">Discord Server</h2>
-          <div class="hero-copy" data-i18n="heroCopy">Xross Engineと各プラグインが公開している設定を、このページからまとめて編集できます。</div>
-          <div id="expiry" class="expiry-badge"></div>
-        </header>
-        <div id="settings" class="settings"></div>
-        <section id="serverBuilderPanel" class="server-builder-panel hidden">
-          <div id="server-builder-builder">
-          <h2>ServerBuilder</h2>
-          <p>サーバー構成データを貼り付けてください。コピーまたはダウンロードすると、一度だけ使える適用コードを作成します。通常のEditor設定には影響しません。</p>
-          <textarea id="serverBuilderJson" rows="20" spellcheck="false" placeholder="AIが作成したサーバー構成データを貼り付け"></textarea>
-          </div>
-          <section id="server-builder-guide" class="server-builder-guide">
-            <h2>AIにサーバー構成を作ってもらうためのガイド</h2>
-            <p>AIには次のガイドURLだけを渡してください。Schema・サンプルなどの補助資料は、このガイドから参照されます。</p>
-            <code id="serverBuilderGuideUrl" class="guide-url"></code>
-            <div class="button-row">
-              <button id="copyServerBuilderGuide" type="button">AI用ガイドURLをコピー</button>
-              <a href="server-builder-guide.md" target="_blank">ガイドを開く</a>
-            </div>
-          </section>
-        </section>
-      </div>
-    </section>
-  </main>
-
-  <div id="actions" class="actions hidden">
-    <div class="button-row">
-      <button id="resetButton" type="button" data-i18n="reset">元に戻す</button>
-      <button id="downloadButton" type="button" data-i18n="download">適用ファイルをダウンロード</button>
-      <button id="copyButton" class="primary" type="button" data-i18n="copy">適用コードをコピー</button>
-    </div>
-  </div>
+  <div id="app"></div>
 </body>
 </html>
