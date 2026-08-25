@@ -1,0 +1,13 @@
+# Xecute ServerBuilder
+
+Generate JSON only for `server-builder/v1`.
+
+Root object:
+- `schemaVersion`: exactly `server-builder/v1`
+- `roles`: optional array, max 25; role fields are `name`, optional `color` (`#RRGGBB`), `hoisted`, `mentionable`
+- `categories`: required array, 1 to 10
+
+Category fields: `name`, optional `visibleToRoles`, required `channels` (1 to 50).
+Channel fields: `type` (`TEXT` or `VOICE`), `name`, optional `topic`, optional `initialMessages` (TEXT only, max 3), optional `visibleToRoles`.
+
+`visibleToRoles` must name roles declared in `roles`. It only grants channel visibility: do not include any permission bitfields, administrator permissions, member role assignments, edits to existing channels, or deletes. Maximum 50 channels across the complete document.
